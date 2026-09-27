@@ -21,12 +21,18 @@ This recipe combines upstream model/runtime work, community Spark recipes and lo
 | Contributor | Origin and local use |
 |---|---|
 | **ZJY0516** | [vLLM #53906](https://github.com/vllm-project/vllm/pull/53906), GLM-5.3 support. **vcruz305** identified the [hybrid kpool tail-slot root cause](https://github.com/vllm-project/vllm/pull/53906#issuecomment-5468099527), carried in the local tail-map repair. |
-| **JaredforReal** | [vLLM #57477](https://github.com/vllm-project/vllm/pull/57477), padded indexer seed stride. [#55736](https://github.com/vllm-project/vllm/pull/55736) informed the earlier strided-KDA/router experiments; those experiments are not part of the accepted profile. |
+| **JaredforReal** | [vLLM #57477](https://github.com/vllm-project/vllm/pull/57477), padded indexer seed stride. [#55736](https://github.com/vllm-project/vllm/pull/55736) informed the separately implemented local router deduplication in this release. The earlier strided-KDA experiment remains excluded; this credit does not claim that the local integration is the upstream PR. |
 | **mmastrac**, **ivanium** | [vLLM #58454](https://github.com/vllm-project/vllm/pull/58454) and [#55219](https://github.com/vllm-project/vllm/pull/55219), speculative kpool corruption and packed-layout/ring work informing the carried indexer fixes. |
 | **zixi-qi** | [vLLM #34049](https://github.com/vllm-project/vllm/pull/34049), vocabulary-parallel top-token selection underlying the local target argmax extension; older local notes use the handle `qizixi`. |
 | **logprobz** | Local Inference Lab's [vllm #639](https://github.com/local-inference-lab/vllm/pull/639) and [#640](https://github.com/local-inference-lab/vllm/pull/640), literal tool delimiters and parser stop-anchor fixes. |
 | **lilianmoraru** | [MiaAI-Lab recipe #203](https://github.com/MiaAI-Lab/GLM-5.3-Flash-EXL3-2x-DGX-Sparks/pull/203), the missing indexer warmup bucket, investigated and applied during earlier recipe work; that optional hook is not included in this release. |
 | **Willian-Zhang** | [vLLM issue #58726](https://github.com/vllm-project/vllm/issues/58726), GB10 checkpoint-loading diagnosis that motivated the local slab loader. |
+
+The GDN integer-metadata producer and hook build on the interfaces of
+vLLM contributors' `GDNAttentionMetadataBuilder.build` and
+`mamba_get_block_table_tensor`. The fused producer and integration are local
+work; no specific upstream PR or individual author is established here. The
+GDN/router integration passed the [documented full-stack validation](docs/validation.md).
 
 ## DeepSeek lineage and measurement
 

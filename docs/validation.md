@@ -1,9 +1,15 @@
 # Validation
 
-The current recipe is LVKP-S-L2. Quantization remains NVFP4 for routed experts
+The current recipe adds GDN metadata fusion and router deduplication to LVKP-S-L2. Quantization remains NVFP4 for routed experts
 and the existing `lossless8` profile for 8-bit non-expert weights. `lossless8`
 is a profile name, not a mathematically lossless conversion. A component speed result does not
 qualify a serving change.
+
+The current validation panel is summarized in
+[2026-09-27 results](results/2026-09-27-gdn-router-admitted.md). It met the
+predeclared qeval floor but c1 was 72/75 versus the prior accepted 75/75;
+prose c4 aggregate sparkDash was lower. This does not establish quality equivalence or a uniform
+throughput gain. The earlier L2 results remain historical comparators.
 
 ## Decode performance
 

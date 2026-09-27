@@ -12,10 +12,19 @@ def overlaps(a, b):
 
 
 def verify(containers, name, overlay):
+    if Path(overlay).resolve() == Path('/'):
+        raise RuntimeError('root overlay destination forbidden')
     for c in containers:
         if c['Name'].lstrip('/') == name:
             raise RuntimeError('container name exists: preserve it and select a new name/path')
         for m in c['Mounts']:
+            mode = m.get('Mode')
+            flags = set(mode.split(',')) if type(mode) is str else set()
+            # Whole-root read-only telemetry sees all paths but owns no subtree.
+            # Keep every preserved subtree overlap and all writable mounts strict.
+            if (m.get('Type') == 'bind' and m.get('Source') == '/'
+                    and m.get('RW') is False and 'ro' in flags and 'rw' not in flags):
+                continue
             if m.get('Type', 'bind') == 'bind' and overlaps(m['Source'], overlay):
                 raise RuntimeError('overlay overlaps a preserved container mount: '+c['Name'])
 

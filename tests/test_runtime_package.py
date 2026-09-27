@@ -52,11 +52,12 @@ class RuntimeTests(unittest.TestCase):
    env=r/'config';env.write_text('source .env.example\n')
    p=subprocess.run(['bash',str(ROOT/'start.sh'),'serve'],env={**os.environ,'PATH':str(b)+':'+os.environ['PATH'],'ENV_FILE':str(env),'TEST_LOG':str(log),'DRY':'1'},capture_output=True,text=True)
    self.assertEqual(p.returncode,0,p.stderr);self.assertFalse(log.exists());self.assertIn('[dry-run] rsync',p.stdout)
- def test_profile_has_only_accepted_flags(self):
+ def test_profile_has_selected_static_flags(self):
   p=subprocess.run(['bash','-c','IB_HCA=a,b; source profiles/current.env; printf "%s\\n" "$EXTRA_ENV"'],cwd=ROOT,capture_output=True,text=True,check=True)
   env=dict(x.split('=',1) for x in p.stdout.split())
   self.assertEqual(env['B12X_ROCE_HCA'],'a,b');self.assertEqual(env['GLM_L2_PREFETCH'],'1');self.assertEqual(env['GLM_LV_MODE'],'batch-uniform')
-  for k in ('GLM_GDN_METADATA_FAST','GLM_ROUTER_DEDUP','GLM_MHC_FUSED','GLM_AB_VARIANTS','VLLM_SERVER_DEV_MODE','GLM_DS_CPU_PIN'):self.assertNotIn(k,env)
+  for k,v in {'GLM_GDN_METADATA_FAST':'1','GLM_ROUTER_DEDUP':'1','GLM_GDN_METADATA_CHECK_CALLS':'8','GLM_ROUTER_DEDUP_CHECK':'1'}.items():self.assertEqual(env[k],v)
+  for k in ('GLM_MHC_FUSED','GLM_AB_VARIANTS','VLLM_SERVER_DEV_MODE','GLM_DS_CPU_PIN','GLM_SKIP_UNUSED_DRAFT_GATHER'):self.assertNotIn(k,env)
  def test_syntax_no_model_import(self):
   for p in (ROOT/'overlay').glob('*.py'):ast.parse(p.read_text())
   for name in ('start.sh','scripts/build_lossless8.sh'):subprocess.run(['bash','-n',str(ROOT/name)],check=True)
@@ -69,6 +70,14 @@ class PreflightTests(unittest.TestCase):
   for c in ({'Name':'/new','Mounts':[]},{'Name':'/old','Mounts':[{'Type':'bind','Source':'/runtime'}]},{'Name':'/old','Mounts':[{'Type':'bind','Source':'/runtime/overlay'}]}):
    with self.assertRaises(RuntimeError):m.verify([c],'new','/runtime')
   m.verify([{'Name':'/old','Mounts':[{'Type':'bind','Source':'/other'}]}],'new','/runtime')
+ def test_readonly_root_telemetry_exception_is_narrow(self):
+  m=self.module()
+  safe={'Type':'bind','Source':'/','RW':False,'Mode':'ro'}
+  m.verify([{'Name':'/dashboard','Mounts':[safe]}],'new','/runtime')
+  for mount in ({**safe,'RW':True},{**safe,'Mode':'rw'},{'Type':'bind','Source':'/runtime','RW':False,'Mode':'ro'}):
+   with self.assertRaises(RuntimeError):m.verify([{'Name':'/dashboard','Mounts':[mount]}],'new','/runtime')
+  with self.assertRaises(RuntimeError):m.verify([{'Name':'/new','Mounts':[safe]}],'new','/runtime')
+  with self.assertRaises(RuntimeError):m.verify([], 'new','/')
  def test_docker_failure_not_absence(self):
   m=self.module()
   with patch('sys.argv',['preflight','--container','new','--overlay','/runtime']),patch.object(m.subprocess,'check_output',side_effect=subprocess.CalledProcessError(1,['docker'])):

@@ -4,7 +4,41 @@
 
 Numbers below retain their original benchmark, sample count and configuration. Different benchmark prompts, reasoning settings, quantizations and boot conditions are not interchangeable baselines.
 
+## 2026-09-27: GDN metadata fusion and router deduplication
+
+The 262k GDN metadata + router-dedup stack passed the predeclared
+qualification protocol and was deployed on the four-node fleet. The complete [20-cell sparkDash table](results/2026-09-27-gdn-router-admitted.md)
+retains prose c1 **71.64 tok/s** versus prior accepted **70.19**, but prose c4
+aggregate **149.44 tok/s** versus **152.89**. The c1 qeval score fell to
+**72/75** from **75/75**, with one truncation; c4 stayed **75/75**. Mean
+teacher-forced KL was **0.029189** versus **0.028837**. Admission accepts the
+declared floor while recording the loss; it is not a whole-model equivalence
+claim. Fresh client prefill medians at nominal 16k/32k/64k were approximately
+2,202/2,209/2,197 input tok/s to first observable generated delta including
+reasoning. No 1M or optional optimization was admitted.
+
+## 2026-09-27: earlier candidate snapshot
+
+This checkpoint predates the completed qualification above; pending states below are historical.
+
+A later strict 192-round in-boot target-start CUDA-event screen passed its own
+A/A and structural gates for GDN metadata fusion plus router dedup. That screen
+was not a sparkDash throughput result. The complete selected 262k stack then
+booted and its final client/guard completed: qeval c1 **72/75** versus accepted
+**75/75** (one truncated; three failed IDs), qeval c4 **75/75**, mean
+teacher-forced KL **0.029189** versus **0.028837**, and sparkDash prose c1
+**71.64** versus **70.19 tok/s** (median of 5) while prose c4 aggregate
+**149.44** versus **152.89 tok/s** (median of 3). The c1 qeval and c4
+throughput regressions remain visible. The qeval floor passed, but manual
+numerical-quality and production promotion decisions are pending. A separate
+fresh prefill client reported medians 2,202 / 2,209 / 2,197 input tok/s at
+nominal 16k / 32k / 64k to the first observable generated delta (including
+reasoning), with independent result review still pending. No 1M capacity result
+is inferred. See the [candidate panel](results/2026-09-27-gdn-router-candidate.md).
+
 ## 2026-09-26: accepted LVKP-S-L2
+
+The previously published warm-cache boot measurement was **129 seconds**. It is not a new boot measurement of the GDN/router release.
 
 The accepted profile adds read-only L2 prefetch to LVKP-S. In the 72-round in-boot qualification, `inboot-target-start-period-cuda-events` measured savings of **0.610 ms at c1** (95% CI [0.548, 0.671]) and **0.727 ms at c4** ([0.617, 0.827]). The duplicate-baseline A/A intervals were [-0.147, 0.029] ms and [-0.127, 0.064] ms, inside the predefined ±0.2 ms band.
 

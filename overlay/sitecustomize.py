@@ -89,3 +89,12 @@ if any(os.environ.get(k, "0").strip().lower() not in ("", "0", "off", "false", "
 if os.environ.get("GLM_L2_PREFETCH", "0").strip().lower() not in ("", "0", "off", "false", "no"):
     import glm_l2_prefetch
     glm_l2_prefetch.register()
+
+# Default-off candidate registration; source identical to the scored diagnostic.
+# Router dedup: JaredforReal, vLLM #55736. Integer GDN producer: vLLM metadata builder.
+if os.environ.get("GLM_ROUTER_DEDUP", "0").strip().lower() not in ("", "0", "off", "false", "no"):
+    import glm_router_dedup
+    glm_router_dedup.register()
+if os.environ.get("GLM_GDN_METADATA_FAST", "0") == "1":
+    import glm_gdn_hook
+    glm_gdn_hook.register()

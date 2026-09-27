@@ -1,5 +1,5 @@
 {
-  "scope": "accepted LVKP-S-L2 active closure; publication not fresh-boot tested",
+  "scope": "Qualified GDN/router 262k runtime source; completed quality and throughput measurements in docs/results/2026-09-27-gdn-router-admitted.md",
   "files": {
     "overlay/E=288,N=512,device_name=NVIDIA_GB10,dtype=fp8_w8a8,block_shape=[128,128].json": {
       "accepted_sha256": "e2d2f68d34ba9d0011c0b2ef48170781b4c7e609885cd4fb16d23221e795968b",
@@ -133,8 +133,8 @@
     },
     "overlay/sitecustomize.py": {
       "accepted_sha256": "a067df7ea92d509e1b0b6323f8a865f2b4d904e4180d3a2b37d30c86bad863e2",
-      "published_sha256": "4507f2ab09cc98697d0f1d403355d4bf3725e7114994be4be9f0f03b4176c84f",
-      "change": "inactive registrations removed; active AST preserved"
+      "published_sha256": "03019b5dca3e0f7cb354d3ee37ae72a498311441d8efe17479c19e5f3dc227cb",
+      "change": "adds default-off GDN/router registration after baseline active hooks; candidate profile enables both"
     },
     "overlay/sparse_attn_indexer_kpool.py": {
       "accepted_sha256": "8a3ecfb0bab2441dd7417ed00a10d142191496149f88e5fe79fcfaea4b160980",
@@ -145,16 +145,52 @@
       "accepted_sha256": "8a04eef0d2f49f419ff4e36023d8c0b939b75f988b32adf562abb78b48c64b0a",
       "published_sha256": "8a04eef0d2f49f419ff4e36023d8c0b939b75f988b32adf562abb78b48c64b0a",
       "change": "none"
+    },
+    "overlay/glm_gdn_hook.py": {
+      "accepted_sha256": null,
+      "published_sha256": "ebb4c322ed24e214db50abb439475ef80d55b8d6d797a90dbad9f3d69cfcb47c",
+      "change": "new prepared-base candidate source; final full-stack quality pending"
+    },
+    "overlay/glm_gdn_metadata_fast.py": {
+      "accepted_sha256": null,
+      "published_sha256": "8740b856af40b126a0620a5c4b5126fcbf413ddd771cdca44f181a5d1818a56d",
+      "change": "new prepared-base candidate source; final full-stack quality pending"
+    },
+    "overlay/glm_router_dedup.py": {
+      "accepted_sha256": null,
+      "published_sha256": "043d875a0920ce781efd4b7c7b873e3f598d192c5ee867489f44d432c297615c",
+      "change": "new prepared-base candidate source; final full-stack quality pending"
+    },
+    "overlay/overhead_common.py": {
+      "accepted_sha256": null,
+      "published_sha256": "e3dbfca2b9c36cdd3bd14118ffffdcf431058b5b40bb25f1f3569f78b3153522",
+      "change": "new prepared-base candidate source; final full-stack quality pending"
+    },
+    "scripts/preflight_runtime.py": {
+      "accepted_sha256": "7cf819c21cf21915f5b88fe3afac032d8223d75747e712d04f33a1fd02e8b37b",
+      "published_sha256": "37a12d92437e61dcdc545712d86d19d02e317f10b70529f329ade7e85a0bae42",
+      "change": "narrow reviewed read-only whole-root telemetry bind exclusion; all name/subtree/writable refusals preserved"
     }
   },
   "sitecustomize_active_statements": {
-    "count": 16,
-    "ordered_exact_AST_subset_of_accepted": true
+    "baseline_count": 16,
+    "candidate_count": 18,
+    "baseline_order_preserved": true,
+    "added_candidate_registrations": [
+      "glm_router_dedup.register",
+      "glm_gdn_hook.register"
+    ]
   },
   "roce_image_audit": {
     "ranks": 4,
     "files_per_rank": 34,
     "all_exact": true,
     "scope": "wrapper and vendored Python/C source files; no GPU or tensor test"
+  },
+  "candidate_source": {
+    "prepared_base_closure_sha256": "47e006d6323fd3576a873e7bd2cff967ed7282c50c8ea9eb4a8629539924097b",
+    "prepared_private_profile_sha256": "787e31711df1f622e1929bfa16ca6749ce83ecc4d7123f49787ea11f0cdea1a4",
+    "portable_profile_sha256": "b66d331ee14f2225b6eb493ff06bdf18125813a9fbd0f0da44db02d4ae532ee7",
+    "state": "QUALIFIED_RUNNING_DEPLOYMENT_PORTABLE_SOURCE_PUBLISHED"
   }
 }

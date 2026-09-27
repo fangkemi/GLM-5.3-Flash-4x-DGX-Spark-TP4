@@ -1,25 +1,46 @@
 # GLM-5.3-Flash on 4× DGX Spark
 
-Run **GLM-5.3-Flash on four NVIDIA DGX Spark / GB10 nodes** with vLLM TP4, NVFP4 routed experts, 8-bit non-expert weights and DFlash2 speculative decoding. The LVKP-S-L2 profile supports **262k context**, up to **32 concurrent sequences**, and an OpenAI-compatible API for text, tools, reasoning and images. The tested fleet uses a RoCE switch.
+Run **GLM-5.3-Flash on four NVIDIA DGX Spark / GB10 nodes** with vLLM TP4, NVFP4 routed experts, 8-bit non-expert weights and DFlash2 speculative decoding. The selected GDN/router profile supports **262k context**, up to **32 concurrent sequences**, and an OpenAI-compatible API for text, tools, reasoning and images. The tested fleet uses a RoCE switch.
 
 This recipe builds on **tonyd2wild's SM121 vLLM image**, **Jacopo Nardiello's scheduler**, **local-inference-lab's b12x / RoCEnante**, **incoai's DFlash2** and the upstream vLLM kernels. See [full credits and component licences](CREDITS.md).
 
+The current recipe adds **GDN metadata fusion and router deduplication** to
+the L2 profile. The full 20-cell sparkDash results are below; previous results
+are in [measurement history](docs/history.md).
+
+**Quality limits:** qeval **72/75 at c1** versus accepted **75/75** (one
+truncation; `code_two_sum`, `math_m9`, `reason_r4` failed) and **75/75 at c4**.
+Teacher-forced mean KL was **0.029189** versus accepted **0.028837** over 17
+items/6,618 positions. The results meet the predefined validation gates, but do not establish
+unchanged quality. [Full returned panel and limits](docs/results/2026-09-27-gdn-router-admitted.md).
+
 ## Current measurements
 
-**Decode throughput, tok/s — sparkDash, 2026-09-26.** 256 output tokens, temperature 0, thinking off. At c2–c16, values are aggregate throughput, with mean per-stream tok/s in parentheses.
+**Decode throughput, tok/s — sparkDash, 2026-09-27.** 256 output tokens,
+temperature 0, thinking off. At c2–c16, values are aggregate throughput,
+with mean per-stream tok/s in parentheses. Prose c1 is median of five runs;
+prose c4 is median of three. All other cells are single observations,
+including eight later same-boot supplemental cells.
 
 | Prompt | c1 tok/s | c2 aggregate | c4 aggregate | c8 aggregate | c16 aggregate |
 |---|---:|---:|---:|---:|---:|
-| Prose | **70.19** | 107.45 (57.95) | **152.89** (39.39) | 221.70 (28.83) | **312.69** (20.34) |
-| Code | 126.44 | 160.34 (81.53) | 185.37 (50.37) | 231.27 (31.77) | 308.26 (21.37) |
-| Structured | 161.11 | 140.48 (80.32) | 196.68 (52.98) | 242.16 (32.61) | 323.78 (23.67) |
-| JSON | 124.25 | 115.55 (61.73) | 193.62 (51.44) | 303.75 (41.90) | 476.41 (32.25) |
+| Prose | **71.64** | 102.43 (53.09) | **149.44** (39.41) | 214.70 (28.06) | 305.59 (20.29) |
+| Code | 123.93 | 151.40 (84.87) | 168.71 (50.28) | 243.43 (33.42) | 289.58 (21.67) |
+| Structured | 163.07 | 144.88 (83.15) | 194.03 (52.05) | 270.84 (38.69) | 300.21 (21.98) |
+| JSON | 126.16 | 126.36 (64.96) | 208.55 (54.33) | 297.32 (38.31) | 439.12 (30.46) |
 
-Prose c1 is the median of five runs; prose c4 reports the median of three runs for each metric. Other cells are single runs. These are short-prompt decode measurements. [Results and methodology](docs/results/2026-09-26-l2.md) · [Additional measurements](docs/results/2026-09-26-l2-supplement.md).
+Against the prior accepted L2 serving panel, prose c1 was **+2.07%**
+(70.19→71.64 tok/s), while prose c4 aggregate was **−2.26%**
+(152.89→149.44 tok/s). These are descriptive cross-session comparisons
+without a confidence interval or causal isolation. [Full 20-cell data and
+methodology](docs/results/2026-09-27-gdn-router-admitted.md).
 
-**Prefill probe:** **~2.2k input tokens/s at 16k–64k**, measured to the first output token, with three runs per prompt length. [Prefill measurements](docs/results/2026-09-26-prefill.md).
+**Fresh prefill probe:** median **2,202 / 2,209 / 2,197 input tok/s** at
+nominal 16k / 32k / 64k, derived from actual API prompt tokens to the first
+observable generated delta including reasoning (three scored runs each).
+The API did not report cached-token counts. [Prefill scope](docs/results/2026-09-27-gdn-router-admitted.md).
 
-**Quality:** qeval **75/75 at c1 and c4**. The separate teacher-forced KLD evaluation measured **0.02884** against the BF16-attention reference on a private 17-item panel. See [validation](docs/validation.md) for the reference, test scope and reproducibility limits.
+Prior accepted L2 measurements and quality history are retained in [measurement history](docs/history.md) and the [original L2 results](docs/results/2026-09-26-l2.md).
 
 ## Serving profile
 
@@ -44,7 +65,7 @@ The `lossless8` conversion chooses an 8-bit representation per tensor to reduce 
 1. Prepare four ARM64 DGX Sparks with Docker GPU access, working SSH management paths, and a verified RoCE fabric. Configure the real interface names, addresses and GID on your fleet.
 2. Follow [installation and image build](docs/install.md), including the pinned base image, RoCEnante and NCCL dependencies. Build on idle nodes.
 3. Follow [weight preparation](docs/weights.md). Target and drafter directories must exist at matching paths on every node. Model weights are not distributed in this repository.
-4. Copy `.env.example` to `.env` and edit the host, fabric and model paths. The example selects the accepted L2 profile.
+4. Copy `.env.example` to `.env` and edit the host, fabric and model paths. `profiles/current.env` enables GDN metadata fusion and router deduplication on the L2 base.
 5. Start and inspect the service:
 
 ```bash
@@ -70,8 +91,9 @@ Run the [validation procedure](docs/validation.md) on your deployment. These mea
 - **Replicated projection splitting:** distributes supported repeated projection work across ranks. Target paths carry numerical checks; the drafter remains subject to target verification.
 - **Vocab-parallel greedy selection:** avoids gathering full target logits where the sampling contract permits exact argmax, including compatible min-token requests.
 - **L2 prefetch:** overlaps read-only weight prefetch with attention / communication. Step-time measurements are recorded in [history](docs/history.md).
+- **GDN metadata fusion and router deduplication:** fuses integer GDN metadata work and deduplicates supported router work, with bounded source checks enabled in the profile. The complete measured panel and its limitations are reported above.
 - **Indexer correctness fixes:** carries padded seed stride, speculative ring and hybrid tail-slot mapping fixes together.
-- **Faster loading and persistent JIT caches:** uses the slab loader and keeps compilation caches between boots. Measured warm-cache boot: **129 seconds**. First-time compilation takes longer.
+- **Faster loading and persistent JIT caches:** uses the slab loader and keeps compilation caches between boots. First-time compilation takes longer than a warm-cache boot.
 
 See [runtime notes](docs/runtime.md) for enabled switches, source versions and implementation details.
 

@@ -10,13 +10,20 @@ The top-level LICENSE contains the MIT grant for repository-owned material.
 Files with explicit SPDX identifiers retain those identifiers. In particular,
 the owner-authored GLM L2-prefetch and other Apache-tagged adapters are offered
 under Apache-2.0, not silently converted to MIT by the top-level licence.
+The new `overlay/overhead_common.py` is a local shared helper without a
+per-file SPDX line; no unrelated upstream author or licence is assigned to it.
 
 2. vLLM and SGLang
 Modified vLLM-derived files include overlay/{glm5next_model,glm5next_attention,
 glm5next_kda,glm5next_kpool_compress,mla_indexer,mamba_hybrid,
 kv_cache_coordinator,sparse_attn_indexer_kpool,glm47_moe,abstract_parser}.py.
-Their existing "Copyright contributors to the vLLM project" and Apache-2.0
-headers are retained. The GLM RoCEnante adapter derives from the vLLM shim
+Those listed vLLM-derived files retain their existing "Copyright contributors
+to the vLLM project" and Apache-2.0 headers.
+The GDN/router integration adds
+`overlay/{glm_gdn_hook,glm_gdn_metadata_fast,glm_router_dedup}.py`, each with
+an Apache-2.0 SPDX header. The GDN producer uses vLLM metadata-builder
+interfaces; the local router adaptation was informed by vLLM #55736.
+The GLM RoCEnante adapter derives from the vLLM shim
 by Jason Cook (original-el8), local-inference-lab/vllm pull request 597,
 merge ba233a681a37a13c2d5786da1a864ad30578d04f.
 The Hadamard-128 helper in glm5next_kpool_compress.py is identified by its

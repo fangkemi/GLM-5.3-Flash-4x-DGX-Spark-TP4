@@ -1,21 +1,33 @@
 # Runtime provenance and publication boundary
 
-The accepted deployment is LVKP-S-L2: the lossless8 target, block128-FP8 incoai
+The previously accepted deployment is LVKP-S-L2: the lossless8 target, block128-FP8 incoai
 DFlash2 drafter, batch-uniform adaptive3/7, kpool fixes, exact/ULP-qualified KDA
-stash changes and L2 prefetch. No GDN/router-dedup/mHC/CPU-placement/gather/dense
-candidate from later experiments is enabled by this recipe.
+stash changes and L2 prefetch. This release adds the qualified
+GDN integer-metadata and router-dedup code to that 262k base, with bounded
+checks. Completed four-rank quality and benchmark results are in
+[the current results](results/2026-09-27-gdn-router-admitted.md). No
+mHC/CPU-placement/gather/dense candidate from later experiments is enabled.
 
 `profiles/current.env` flattens the previously nested accepted profile. Site-specific
 paths and network settings live in `.env`; custom HCA selection is explicitly
 forwarded to both NCCL and RoCEnante. Automatic page-cache prewarm, boot traffic
 and memory compaction are disabled in the public launcher for operator control.
 These operational defaults are distinct from the measured model configuration.
+The portable profile appends `GLM_GDN_METADATA_FAST=1`,
+`GLM_ROUTER_DEDUP=1`, `GLM_GDN_METADATA_CHECK_CALLS=8` and
+`GLM_ROUTER_DEDUP_CHECK=1` after the original baseline flags. The checked
+deployment uses the same effective four values, with site paths kept outside
+the portable profile. A pre-existing local `.env` must still source
+`profiles/current.env` to select the current stack.
 
-`runtime-source-manifest.json` records accepted source and published hashes.
+`runtime-source-manifest.json` records historical and published source hashes.
+The GDN/router files are pinned to the qualified running deployment. The
+portable launcher itself has not undergone a fresh-clone four-node boot.
 Active kernel, model, scheduler and loader sources are preserved except process-origin
 documentation comments. The publication's sitecustomize removes
-inactive diagnostic/experimental registrations while preserving active statement
-order and logic. Removed modules include AB/dev counters, experimental mHC/router,
+inactive diagnostic/experimental registrations while preserving baseline active statement
+order and logic. It adds default-off GDN/router registrations that the current
+profile enables. Removed modules include AB/dev counters, experimental mHC,
 verify-cut, draft-context graph and prefill scheduling hooks. Dynamic optional
 imports in retained helpers are unreachable under current.env; unsupported
 experimental flags are not part of this package. This is not a claim that every
