@@ -101,7 +101,11 @@ def install(mod) -> None:
                 hi = max(pos.numel() - 1, 0)
                 first = pos[qsl[:-1].clamp(0, hi)]
                 last = pos[(qsl[1:] - 1).clamp(0, hi)]
-                _state["full"] = ((last + 1) // bs != first // bs).to(torch.int32)
+                # The next forward can migrate the previous accepted state before
+                # its own boundary flag is evaluated. Keep full states whenever
+                # its maximum speculative lookahead could cross this boundary.
+                lookahead = md.spec_state_indices_tensor.shape[-1] - 1
+                _state["full"] = ((last + 1 + lookahead) // bs != first // bs).to(torch.int32)
             return orig_inner(self, qkv_proj_states, g1, beta, core_attn_out)
         finally:
             _state["full"] = None

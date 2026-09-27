@@ -4,6 +4,17 @@
 
 Numbers below retain their original benchmark, sample count and configuration. Different benchmark prompts, reasoning settings, quantizations and boot conditions are not interchangeable baselines.
 
+## 2026-09-27: KDA speculative-boundary correctness fix
+
+Fixed compact verification-state records being copied into a full-state slot
+when the next speculative window crosses a block boundary. This could turn
+subsequent output into repeated tokens with non-finite log probabilities.
+The fix stores full states early enough; recurrence arithmetic and quantization
+are unchanged. Native tensor checks reproduce the old failure and confirm
+byte-exact corrected boundary states against a full-state reference. Two fresh
+55k-context request replays completed without the failure. No new performance,
+qeval or KLD result is claimed. [Validation and limits](results/2026-09-27-kda-boundary-fix.md).
+
 ## 2026-09-27: GDN metadata fusion and router deduplication
 
 The 262k GDN metadata + router-dedup stack passed the predeclared

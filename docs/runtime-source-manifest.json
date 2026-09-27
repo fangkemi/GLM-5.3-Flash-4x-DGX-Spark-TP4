@@ -1,5 +1,5 @@
 {
-  "scope": "Qualified GDN/router 262k runtime source; completed quality and throughput measurements in docs/results/2026-09-27-gdn-router-admitted.md",
+  "scope": "GDN/router 262k runtime with KDA stash boundary correctness repair; throughput/qeval/KLD panel predates this repair. See docs/results/2026-09-27-kda-boundary-fix.md.",
   "files": {
     "overlay/E=288,N=512,device_name=NVIDIA_GB10,dtype=fp8_w8a8,block_shape=[128,128].json": {
       "accepted_sha256": "e2d2f68d34ba9d0011c0b2ef48170781b4c7e609885cd4fb16d23221e795968b",
@@ -73,13 +73,13 @@
     },
     "overlay/glm_kda_stash.py": {
       "accepted_sha256": "200f82469772a0dd8583f54d830b450116cbe88254ed7804c36f8b033a89ed09",
-      "published_sha256": "200f82469772a0dd8583f54d830b450116cbe88254ed7804c36f8b033a89ed09",
-      "change": "none"
+      "published_sha256": "3788451459a9a20a768be80981b48f78eb0f6bff0bc894bfe915fa206384bdad",
+      "change": "KDA boundary repair: store full state before next speculative-window migration; exact deployed source. accepted_sha256 retains the pre-fix measured baseline."
     },
     "overlay/glm_kda_stash_fast.py": {
       "accepted_sha256": "733ff460d8870a11bca76ec149898e8a96621f5cf7fc99b80573a7636af88eb2",
-      "published_sha256": "d8e2e7e08f36e84ef5dd636ac35f75d04cea27fc26238f8f20d2d7c99d2212bd",
-      "change": "documentation only"
+      "published_sha256": "465977f63e65cbad2d3b90fb0e6931b4cda494087739be8a75692051f5c9faf6",
+      "change": "KDA boundary repair: store full state before next speculative-window migration; exact deployed source. accepted_sha256 retains the pre-fix measured baseline."
     },
     "overlay/glm_l2_prefetch.py": {
       "accepted_sha256": "a0dbf3ac0fa26d7029a7898b6ce9a78edc16c27e93d0226e91581f2d43cb4263",

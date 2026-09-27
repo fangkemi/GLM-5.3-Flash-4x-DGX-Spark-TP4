@@ -11,6 +11,19 @@ predeclared qeval floor but c1 was 72/75 versus the prior accepted 75/75;
 prose c4 aggregate sparkDash was lower. This does not establish quality equivalence or a uniform
 throughput gain. The earlier L2 results remain historical comparators.
 
+## KDA boundary regression
+
+The current recipe includes the [KDA state-migration repair](results/2026-09-27-kda-boundary-fix.md).
+The broad quality/throughput panel above predates that repair. Run the portable
+CPU regression without a model or GPU:
+
+```bash
+python3 -m unittest discover -s tests -p 'test_kda_stash_boundary.py' -v
+```
+
+This checks the actual wrapper predicate against state-migration timelines; it
+does not replace native tensor checks or long-context serving validation.
+
 ## Decode performance
 
 Use sparkDash DecodeBench with its original generic prose/code/structured/JSON

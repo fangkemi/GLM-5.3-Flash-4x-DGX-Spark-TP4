@@ -21,6 +21,10 @@ the portable profile. A pre-existing local `.env` must still source
 `profiles/current.env` to select the current stack.
 
 `runtime-source-manifest.json` records historical and published source hashes.
+The two KDA stash wrappers include the subsequent [boundary correctness repair](results/2026-09-27-kda-boundary-fix.md):
+full-state storage starts early enough for the next speculative window's state
+migration. Their published hashes match the repaired deployment; their accepted
+hashes retain the pre-fix measured baseline.
 The GDN/router files are pinned to the qualified running deployment. The
 portable launcher itself has not undergone a fresh-clone four-node boot.
 Active kernel, model, scheduler and loader sources are preserved except process-origin

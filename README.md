@@ -8,13 +8,21 @@ The current recipe adds **GDN metadata fusion and router deduplication** to
 the L2 profile. The full 20-cell sparkDash results are below; previous results
 are in [measurement history](docs/history.md).
 
-**Quality limits:** qeval **72/75 at c1** versus accepted **75/75** (one
+**Quality limits (pre-fix panel):** qeval **72/75 at c1** versus accepted **75/75** (one
 truncation; `code_two_sum`, `math_m9`, `reason_r4` failed) and **75/75 at c4**.
 Teacher-forced mean KL was **0.029189** versus accepted **0.028837** over 17
 items/6,618 positions. The results meet the predefined validation gates, but do not establish
 unchanged quality. [Full returned panel and limits](docs/results/2026-09-27-gdn-router-admitted.md).
 
-## Current measurements
+**Correctness update (2026-09-27):** fixed KDA state migration at speculative
+block boundaries, which could produce NaNs and repeated output. Existing
+installations need a coordinated restart with the updated overlays.
+[Fix, validation and upgrade notes](docs/results/2026-09-27-kda-boundary-fix.md).
+
+## Latest measurements
+
+The throughput, prefill and quality measurements below **predate the KDA boundary
+fix**. Its performance impact and full qeval/KLD panel have not been remeasured.
 
 **Decode throughput, tok/s — sparkDash, 2026-09-27.** 256 output tokens,
 temperature 0, thinking off. At c2–c16, values are aggregate throughput,

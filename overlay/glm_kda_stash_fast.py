@@ -232,7 +232,7 @@ def _build_flag_kernel():
     from vllm.triton_utils import tl, triton
 
     @triton.jit
-    def kda_stash_full_flags_kernel(pos, sel, qsl, out, n, hi, bs, HAS_SEL: tl.constexpr, BLOCK: tl.constexpr):
+    def kda_stash_full_flags_kernel(pos, sel, qsl, out, n, hi, bs, lookahead, HAS_SEL: tl.constexpr, BLOCK: tl.constexpr):
         i = tl.program_id(0) * BLOCK + tl.arange(0, BLOCK)
         m = i < n
         s = tl.load(qsl + i, mask=m, other=0).to(tl.int64)
@@ -243,7 +243,7 @@ def _build_flag_kernel():
             s = tl.load(sel + s, mask=m, other=0).to(tl.int64)
             e = tl.load(sel + e, mask=m, other=0).to(tl.int64)
         first = tl.load(pos + s, mask=m, other=0).to(tl.int64)
-        last = tl.load(pos + e, mask=m, other=0).to(tl.int64) + 1
+        last = tl.load(pos + e, mask=m, other=0).to(tl.int64) + 1 + lookahead
         # torch // on int64 is floor division; Triton // truncates. bs > 0.
         qf = first // bs
         qf = tl.where((first % bs != 0) & (first < 0), qf - 1, qf)
@@ -255,7 +255,7 @@ def _build_flag_kernel():
 
 
 def full_flags_torch(positions, num_actual_tokens, spec_token_indx, non_spec_token_indx, spec_query_start_loc, n,
-                     bs):
+                     bs, lookahead=0):
     """The stash wrapper's torch chain (overlay/glm_kda_stash.py `_state["full"]`), verbatim, for tests."""
     import torch
     pos = positions[:num_actual_tokens]
@@ -265,11 +265,11 @@ def full_flags_torch(positions, num_actual_tokens, spec_token_indx, non_spec_tok
     hi = max(pos.numel() - 1, 0)
     first = pos[qsl[:-1].clamp(0, hi)]
     last = pos[(qsl[1:] - 1).clamp(0, hi)]
-    return ((last + 1) // bs != first // bs).to(torch.int32)
+    return ((last + 1 + lookahead) // bs != first // bs).to(torch.int32)
 
 
 def full_flags_fused(positions, num_actual_tokens, spec_token_indx, non_spec_token_indx, spec_query_start_loc, n,
-                     bs):
+                     bs, lookahead=0):
     import torch
     if _state["flag_kernel"] is None:
         _state["flag_kernel"] = _build_flag_kernel()
@@ -279,13 +279,13 @@ def full_flags_fused(positions, num_actual_tokens, spec_token_indx, non_spec_tok
         # no selected token: the kernel would read element 0 of an empty selection. The stash wrapper never gets
         # here (num_spec_decodes > 0 implies spec tokens); keep the torch chain's own behaviour if it ever does.
         return full_flags_torch(positions, num_actual_tokens, spec_token_indx, non_spec_token_indx,
-                                spec_query_start_loc, n, bs)
+                                spec_query_start_loc, n, bs, lookahead)
     hi = max(numel - 1, 0)
     out = torch.empty(n, dtype=torch.int32, device=positions.device)
     if n > 0:
         BLOCK = 64 if n <= 64 else 256
         _state["flag_kernel"][(triton_cdiv(n, BLOCK),)](
-            positions, spec_token_indx if mixed else positions, spec_query_start_loc, out, n, hi, bs,
+            positions, spec_token_indx if mixed else positions, spec_query_start_loc, out, n, hi, bs, lookahead,
             HAS_SEL=mixed, BLOCK=BLOCK, num_warps=1 if BLOCK == 64 else 4)
     _state["flags"] += 1
     return out
@@ -415,9 +415,10 @@ def install(mod) -> None:
                     n = md.num_spec_decodes
                     positions = self._kda_stash_positions
                     args = (positions, md.num_actual_tokens, md.spec_token_indx, md.non_spec_token_indx,
-                            md.spec_query_start_loc, n, bs)
+                            md.spec_query_start_loc, n, bs, md.spec_state_indices_tensor.shape[-1] - 1)
                     if mode == "share":
-                        key = (id(md), id(positions), n, md.num_actual_tokens, bs)
+                        key = (id(md), id(positions), n, md.num_actual_tokens, bs,
+                               md.spec_state_indices_tensor.shape[-1])
                         if _state["first_prefix"] is None:
                             _state["first_prefix"] = self.prefix
                         if self.prefix == _state["first_prefix"] or _state["share_key"] != key:
