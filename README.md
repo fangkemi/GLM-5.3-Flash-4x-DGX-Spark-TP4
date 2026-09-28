@@ -33,8 +33,9 @@ sparkDash 1.8.8 bench (256 tokens, temperature 0, 2 warm-up runs discarded; c1 p
   all-reduce 13 %, mHC 11 % of a prefill step).
 - **Boot:** ~2 min to `/health` 200 with warm JIT caches; 7.4 min on the first boot of a fresh clone (cold FlashInfer / Triton / TileLang caches).
 
-The 2026-09-18 first release (prose c1 37 tok/s) and its comparison tables are in
-[docs/history-20260918.md](docs/history-20260918.md).
+Earlier measurements: [measurement history](docs/history.md) (2026-09-26/27 L2 and GDN/router panels) and the
+[2026-09-18 first release](docs/history-2026-09-18.md) (prose c1 37 tok/s). These numbers include the 2026-09-27
+KDA speculative-block-boundary fix ([notes](docs/results/2026-09-27-kda-boundary-fix.md)).
 
 ## What is in the stack
 
@@ -48,16 +49,16 @@ promoted only when its confidence interval clears zero and an identical-arm cont
 | Dense layers on 8-bit grids | `scripts/build_lossless8.sh`, `glm_quant_mix.py`, `overlay/qmix_patch.py` | step −7.5 ms, output error 0.25 % | tonyd2wild found the 18 GiB left in BF16 |
 | DFlash2 drafter, block-FP8 linears | `scripts/drafter_fp8.py` | draft graph 4.24 → 3.10 ms, acceptance unchanged | incoai (drafter) |
 | Batch-uniform draft length | `overlay/glm_levers_sched.py`, `profiles/levers_policy.json` | prose c4 136.7 → 148.2 (no eager mixed-k steps) | builds on jnardiello's adaptive-k scheduler and Reederey87's verify-only idea |
-| RoCEnante one-shot all-reduce / all-gather | `docker/Dockerfile.roce`, `roce/` | decode collectives over RDMA, both rails | Luke Alonso, Jason Cook (local-inference-lab/b12x#295, vllm#597); tonyd2wild's v11 port; rhys101 |
+| RoCEnante one-shot all-reduce / all-gather | `Dockerfile.roce`, `roce/` | decode collectives over RDMA, both rails | Luke Alonso, Jason Cook (local-inference-lab/b12x#295, vllm#597); tonyd2wild's v11 port; rhys101 |
 | Replicated-linear TP split, FP8 draft head, one-gather top-k | `overlay/glm_ds_*.py` | dense −0.48 ms, bit-exact where marked | ported from our DeepSeek-V4.1 stack |
 | KDA verify stash, no-copy reads, fused flags | `overlay/glm_kda_stash*.py`, `kda_stash.py` | −0.90 ms (no-copy) | ours |
 | L2 prefetch of the next weights | `overlay/glm_l2_prefetch.py` | −0.5 ms | ours (from the DeepSeek-V4.1 stack) |
 | Router GEMM dedup | `overlay/glm_router_dedup.py` | −0.5 ms | vllm#55736 (JaredforReal), MiaAI-Lab issue #271 |
 | GDN metadata fast path | `overlay/glm_gdn_metadata_fast.py` | exact, host side | ours, on vLLM's builder |
-| Vocab-parallel target argmax, greedy path also for `min_tokens` | `overlay/glm_target_argmax.py` | no full-vocab gather at verify; −0.59 ms on `min_tokens` requests | vLLM's draft-side argmax from vllm#34049 (qizixi) |
+| Vocab-parallel target argmax, greedy path also for `min_tokens` | `overlay/glm_target_argmax.py` | no full-vocab gather at verify; −0.59 ms on `min_tokens` requests | vLLM's draft-side argmax from vllm#34049 (zixi-qi) |
 | Padded-vocab clamp in both samplers | `overlay/gumbel.py`, `rejection_sampler_utils.py` | correctness | vllm#50843 (alexbi29) |
 | DSA indexer kpool tail fixes | `GLM_KPOOL_FIX=1`, `overlay/glm5next_*.py`, `mla_indexer.py`, `mamba_hybrid.py` | correctness past the first KV block | vllm#57477 (JaredforReal), #58454 (mmastrac, on ivanium's #55219), #53906 (ZJY0516), root cause vcruz305 |
-| Prefill cadence + end drain | `overlay/glm_prefill_sched.py`, `glm_prefill_hooks.py` | decoders under a 32k prefill 1.3 → 7.3 tok/s; short newcomer at c4 −22 %; TTFT −8 %; step unchanged | jnardiello (E27, E27b/c, E29) |
+| Prefill cadence + end drain | `overlay/glm_prefill_sched.py`, `glm_prefill_hooks.py` | decoders under a 32k prefill 1.3 → 7.3 tok/s; short newcomer at c4 −22 %; TTFT −8 %; step unchanged | jnardiello (E27, E27b/c, E29), FujitsuPolycom (SparkRing non-DP throttle) |
 | Prefix cache for the DFlash2 draft group | `overlay/kv_cache_coordinator.py` | repeated 20k prompt 8.1 s → 0.63 s TTFT | tonyd2wild |
 | Fast weight loader, persistent FlashInfer JIT cache | `overlay/glm_fast_load.py`, `start.sh` | boot 271 → 128 s | vllm#58726 (Willian-Zhang) |
 
@@ -69,7 +70,7 @@ W4A4 / MXFP4 experts for prefill (1.1-1.3x on MoE at 16-21 % MoE output error).
 
 1. **Image**, on every node (no CUDA compile, a minute or two):
    ```bash
-   docker build -f docker/Dockerfile.roce -t glm53-roce:v11-b58f34ea .
+   docker build --platform linux/arm64 -f Dockerfile.roce -t glm53-roce:v11-b58f34ea .
    ```
    It adds the b12x RoCEnante subset (Apache-2.0, `roce/b12x/LICENSE`, pinned in
    `roce/b12x/PROVENANCE.json`) to tonyd2wild's `ghcr.io/tonyd2wild/vllm-glm53-flash` (vLLM `487ecf187`).
@@ -86,11 +87,11 @@ W4A4 / MXFP4 experts for prefill (1.1-1.3x on MoE at 16-21 % MoE output error).
 ## Quick start
 
 ```bash
-cp .env.example .env            # hosts, fabric, image and weight paths; sources profiles/production.env
+cp .env.example .env            # hosts, fabric, image and weight paths; sources profiles/current.env
 ./start.sh serve                # workers first, then the head
 ./start.sh status               # until health 200
 ./start.sh logs 0 80
-./start.sh stop                 # stop and remove; stop-keep leaves the containers for inspection
+./start.sh stop                 # stops, never removes; a new deployment needs a fresh CTN
 ```
 
 The endpoint binds to loopback on the head; put your own tunnel or proxy in front of it.
@@ -103,7 +104,7 @@ curl http://127.0.0.1:8093/v1/chat/completions -H 'Content-Type: application/jso
 
 `reasoning_effort` is `low`, `high` or `max`. Tool calls use the `glm47` parser, reasoning the `glm45` parser.
 
-Every switch is a line in `profiles/production.env`; removing a line turns that piece off. The
+Every switch is a line in `profiles/current.env`; removing a line turns that piece off. The
 `serve` step first checks that no existing container already uses the target name or overlay path.
 
 ## Benchmarks and gates
@@ -129,4 +130,11 @@ the `*_gpu.py` ones need a free GPU, so run them with the model stopped.
   exactness of a change is checked per kernel, not by comparing text.
 - The DFlash2 drafter is CC BY-NC-ND 4.0.
 
-See [CREDITS.md](CREDITS.md).
+## More documentation
+
+- [docs/install.md](docs/install.md): host prerequisites, NCCL, image build, launch and preflight rules
+- [docs/weights.md](docs/weights.md): preparing the lossless8 target and the FP8 drafter
+- [docs/runtime.md](docs/runtime.md), [docs/validation.md](docs/validation.md): runtime switches and the validation scope
+- [docs/results/](docs/results/): raw result files per release
+
+See [CREDITS.md](CREDITS.md) for authors and pull requests, and [NOTICE](NOTICE) with [LICENSES/](LICENSES/) for licence boundaries.

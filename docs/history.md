@@ -1,0 +1,95 @@
+# Measurement and recipe history
+
+[Current recipe and results](../README.md) · [Archived 2026-09-18 README](history-2026-09-18.md)
+
+Numbers below retain their original benchmark, sample count and configuration. Different benchmark prompts, reasoning settings, quantizations and boot conditions are not interchangeable baselines.
+
+## 2026-09-28: fresh-clone release (argmax clamp, prefill scheduler, shipped policy)
+
+The first release booted from a fresh clone, including the image build. Adds the vLLM #50843 argmax
+clamp and jnardiello's E27/E29 prefill scheduler, and ships the draft-length policy in
+`profiles/`. sparkDash prose c1 71.39 / c4 151.03 / c16 330.92, step time prose 39.0 ms, qeval
+75/75, KL 0.0293. [Results](results/2026-09-28-release.md).
+
+## 2026-09-27: KDA speculative-boundary correctness fix
+
+Fixed compact verification-state records being copied into a full-state slot
+when the next speculative window crosses a block boundary. This could turn
+subsequent output into repeated tokens with non-finite log probabilities.
+The fix stores full states early enough; recurrence arithmetic and quantization
+are unchanged. Native tensor checks reproduce the old failure and confirm
+byte-exact corrected boundary states against a full-state reference. Two fresh
+55k-context request replays completed without the failure. No new performance,
+qeval or KLD result is claimed. [Validation and limits](results/2026-09-27-kda-boundary-fix.md).
+
+## 2026-09-27: GDN metadata fusion and router deduplication
+
+The 262k GDN metadata + router-dedup stack passed the predeclared
+qualification protocol and was deployed on the four-node fleet. The complete [20-cell sparkDash table](results/2026-09-27-gdn-router-admitted.md)
+retains prose c1 **71.64 tok/s** versus prior accepted **70.19**, but prose c4
+aggregate **149.44 tok/s** versus **152.89**. The c1 qeval score fell to
+**72/75** from **75/75**, with one truncation; c4 stayed **75/75**. Mean
+teacher-forced KL was **0.029189** versus **0.028837**. Admission accepts the
+declared floor while recording the loss; it is not a whole-model equivalence
+claim. Fresh client prefill medians at nominal 16k/32k/64k were approximately
+2,202/2,209/2,197 input tok/s to first observable generated delta including
+reasoning. No 1M or optional optimization was admitted.
+
+## 2026-09-27: earlier candidate snapshot
+
+This checkpoint predates the completed qualification above; pending states below are historical.
+
+A later strict 192-round in-boot target-start CUDA-event screen passed its own
+A/A and structural gates for GDN metadata fusion plus router dedup. That screen
+was not a sparkDash throughput result. The complete selected 262k stack then
+booted and its final client/guard completed: qeval c1 **72/75** versus accepted
+**75/75** (one truncated; three failed IDs), qeval c4 **75/75**, mean
+teacher-forced KL **0.029189** versus **0.028837**, and sparkDash prose c1
+**71.64** versus **70.19 tok/s** (median of 5) while prose c4 aggregate
+**149.44** versus **152.89 tok/s** (median of 3). The c1 qeval and c4
+throughput regressions remain visible. The qeval floor passed, but manual
+numerical-quality and production promotion decisions are pending. A separate
+fresh prefill client reported medians 2,202 / 2,209 / 2,197 input tok/s at
+nominal 16k / 32k / 64k to the first observable generated delta (including
+reasoning), with independent result review still pending. No 1M capacity result
+is inferred. See the [candidate panel](results/2026-09-27-gdn-router-candidate.md).
+
+## 2026-09-26: accepted LVKP-S-L2
+
+The previously published warm-cache boot measurement was **129 seconds**. It is not a new boot measurement of the GDN/router release.
+
+The accepted profile adds read-only L2 prefetch to LVKP-S. In the 72-round in-boot qualification, `inboot-target-start-period-cuda-events` measured savings of **0.610 ms at c1** (95% CI [0.548, 0.671]) and **0.727 ms at c4** ([0.617, 0.827]). The duplicate-baseline A/A intervals were [-0.147, 0.029] ms and [-0.127, 0.064] ms, inside the predefined ±0.2 ms band.
+
+The following full sparkDash qualification measured prose c1 **70.84 tok/s** (median of 5: 72.02, 68.86, 70.84, 66.90, 72.21) and c4 **151.41 tok/s aggregate** (median of 3: 146.62, 153.85, 151.41). The preceding accepted LVKP-S sparkDash medians were 68.35 and 149.55 tok/s respectively. Those measurements imply +3.64% and +1.24% for that comparison; they are not the result of the later evening screen.
+
+L2 quality qualification: qeval 75/75 at c1 and c4; KLD 0.0288366 over 17 items / 6,618 teacher-forced positions against the retained BF16-attention reference. A separate approximately 9.6k-token registry sanity test passed 32/32 lookups at each concurrency. No full-context quality claim follows from that test.
+
+The original accepted containers were restored after the evening experiments. A fresh full sparkDash measurement is recorded in [release validation](validation.md), separately from the promotion measurement above.
+
+## 2026-09-26 evening: GDN and router experiments, not promoted
+
+Two independent in-boot experiments found positive target-step contrasts for GDN metadata optimization combined with router deduplication. Neither qualified for deployment under the predefined duplicate-baseline control gate.
+
+The final 32-round run used four active arms in one diagnostic boot: baseline L2, duplicate L2, GDN+router, and GDN. Common-shape coverage passed the 95% gate (minimum 96.078431%); structural and tensor-check-counter reviews passed. The benchmark was `inboot-target-start-period-cuda-events`, not sparkDash:
+
+| Contrast | c1 saving, ms (95% CI) | c4 saving, ms (95% CI) |
+|---|---:|---:|
+| GDN+router vs L2 | 0.813 [0.663, 0.959] | 0.663 [0.375, 0.909] |
+| GDN vs L2 | 0.563 [0.427, 0.695] | 0.121 [-0.437, 0.518] |
+| Duplicate baseline A/A | 0.073 [-0.105, 0.233] | -0.151 [-0.381, 0.063] |
+
+Both A/A intervals extend outside ±0.2 ms. The result is **insufficient control precision for promotion**, not evidence that the positive candidate contrast is zero, nor a demonstrated quality regression. The thresholds were retained. No candidate sparkDash, qeval or KLD release run followed, and none of these experimental gains is included in the README throughput.
+
+An earlier 36-round experiment also failed the A/A gate. Its six-arm coverage failure involved CPU-placement arms; a separately documented primary-arm analysis retained the same primary estimator but still did not qualify. The two runs were not pooled, and no failed blocks were removed to manufacture a pass.
+
+## 2026-09-26: bounded dense / MoE investigations
+
+The dense experiment passed 4,496 finite and byte-comparison checks. Eliminating original-workspace zeroing saved approximately 0.4–0.7 microseconds per component call, but the full integration candidate did not beat the installed stock path: one tested cell was slower and the other was within noise. This does not rule out different tiling or a different integration.
+
+The MoE workspace-reuse experiment passed 600 finite and byte-comparison checks. It measured only workspace-zero reuse with fixed alignment and automatic tiles, not a replacement MoE implementation. Some component contrasts were positive, but duplicate graph controls showed bias in other cells. No model throughput claim or production change followed.
+
+A draft-gather qualification tool failed before any tensor test because its staged path was shallower than the generator expected. The repaired tool passed 9 CPU tests and independent source review; GPU qualification and performance remain unmeasured. It is not part of this release.
+
+## Earlier recipes
+
+The [2026-09-18 snapshot](history-2026-09-18.md) preserves the previous FP8 / NVFP4 / EXL3 / SGLang comparisons, high/low reasoning tests, task-time experiments and original boot measurements. They use different settings from the current thinking-off sparkDash table. Historical statements about which ideas were still open or which switches were defaults apply only to that snapshot.

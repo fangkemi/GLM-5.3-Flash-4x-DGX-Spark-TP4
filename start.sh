@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # GLM-5.3-Flash NVFP4 on 4x DGX Spark, vLLM TP4 with DFlash2 adaptive draft.
-# usage: ./start.sh serve|stop|stop-keep|status|logs [rank]   (config in .env, copy .env.example)
+# usage: ./start.sh serve|stop|status|logs [rank]   (config in .env, copy .env.example)
 set -euo pipefail
 cd "$(dirname "$0")"
 ENV_FILE=${ENV_FILE:-.env}
@@ -128,14 +128,14 @@ case $CMD in
       rssh "${HOSTS[0]}" "cd $OVERLAY_REMOTE && BOOT_WARM_TOKENS=${BOOT_WARM_TOKENS:-16384} BOOT_WARM_COUNT=${BOOT_WARM_COUNT:-2} nohup python3 scripts/boot_warm.py --base http://127.0.0.1:${PORT:-8093} --model $SERVED_NAME > cache/boot_warm.log 2>&1 & echo \$! > cache/boot_warm.pid"
     fi
     echo "launched ${CTN}-r0..3; ./start.sh status until /health is 200 (cold-cache boots can take longer)";;
-  stop)   # stop and remove the four containers
-    for r in 0 1 2 3; do rssh "${HOSTS[$r]}" "python3 $OVERLAY_REMOTE/scripts/stop_preserving.py --root $OVERLAY_REMOTE --container ${CTN}-r$r >/dev/null; docker rm ${CTN}-r$r >/dev/null && echo \$(hostname) removed ${CTN}-r$r"; done;;
-  stop-keep)   # stop only; the containers stay for inspection (serve then needs another CTN)
-    for r in 0 1 2 3; do rssh "${HOSTS[$r]}" "python3 $OVERLAY_REMOTE/scripts/stop_preserving.py --root $OVERLAY_REMOTE --container ${CTN}-r$r"; done;;
+  stop)   # stop, never remove: the containers stay for inspection or `docker start`; a new deployment needs a fresh CTN
+    for r in 0 1 2 3; do
+      rssh "${HOSTS[$r]}" "python3 $OVERLAY_REMOTE/scripts/stop_preserving.py --root $OVERLAY_REMOTE --container ${CTN}-r$r"
+    done;;
   status)
     for r in 0 1 2 3; do rssh "${HOSTS[$r]}" "echo \$(hostname) \$(docker ps -a --filter name=${CTN}-r$r --format '{{.Status}}') avail=\$(free -g | awk 'NR==2{print \$7}')G"; done
     rssh "${HOSTS[0]}" "curl -s -m 3 -o /dev/null -w 'health %{http_code}\n' http://127.0.0.1:${PORT:-8093}/health";;
   logs)
     r=${2:-0}; rssh "${HOSTS[$r]}" "docker logs --tail ${3:-40} ${CTN}-r$r 2>&1 | cut -c1-200";;
-  *) echo "usage: $0 serve|stop|stop-keep|status|logs [rank] [lines]"; exit 2;;
+  *) echo "usage: $0 serve|stop|status|logs [rank] [lines]"; exit 2;;
 esac

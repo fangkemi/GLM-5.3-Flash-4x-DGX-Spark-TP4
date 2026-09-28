@@ -1,4 +1,4 @@
-"""In-image checks for the GLM RoCEnante shim (CPU only; run by docker/Dockerfile.roce).
+"""In-image checks for the GLM RoCEnante shim (CPU only; run by Dockerfile.roce).
 
 1. Off by default: with GLM_ROCE_ALLREDUCE unset, importing the three vLLM modules
    leaves them untouched and ``b12x`` is not importable (image == base image).

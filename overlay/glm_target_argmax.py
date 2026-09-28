@@ -15,7 +15,7 @@ Greedy path here (all ranks, same decision):
     -> all-gather of 16 bytes per row -> the rank with the largest max wins, lowest rank on ties
     -> the greedy branch of the rejection kernel, re-implemented on the token ids.
 
-The vocab-parallel argmax is vLLM's own `LogitsProcessor.get_top_tokens`, added by qizixi in vllm#34049
+The vocab-parallel argmax is vLLM's own `LogitsProcessor.get_top_tokens`, added by zixi-qi in vllm#34049
 ("[Spec Decode] Reduce TP communication for speculative decoding draft token generation", 2026-02-22);
 credit to its author and reviewers. vLLM uses it only for drafts. The reduction below is the same
 (value/index pairs, argmax over ranks). It adds three things the target needs:
