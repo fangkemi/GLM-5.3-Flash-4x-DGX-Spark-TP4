@@ -37,14 +37,16 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "overlay"))
 os.environ.setdefault("GLM_PREFILL_SHARD", "1")
 
+import importlib.util  # noqa: E402
+
 import torch  # noqa: E402
 
 import glm_prefill_hooks as hooks  # noqa: E402
 import glm_prefill_shard as ps  # noqa: E402
 
-IMAGE_SRC = os.environ.get(
-    "GLM_IMAGE_SRC",
-    os.path.expanduser("~/Projects/sparks/diagnostics/glm53-boot-sharded-20260918/evidence"))
+# Root holding vllm/models/glm5next/...: the vLLM installed in the image by default, GLM_IMAGE_SRC for a source tree.
+IMAGE_SRC = os.environ.get("GLM_IMAGE_SRC") or os.path.dirname(
+    os.path.dirname(importlib.util.find_spec("vllm").origin))
 MODEL_PY = os.path.join(IMAGE_SRC, "vllm/models/glm5next/nvidia/model.py")
 
 W = 4

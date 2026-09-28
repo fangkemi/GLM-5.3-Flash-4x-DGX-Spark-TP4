@@ -1,217 +1,132 @@
-# GLM-5.3-Flash NVFP4 on 4x NVIDIA DGX Spark (vLLM TP4, DFlash2 adaptive draft)
+# GLM-5.3-Flash on 4x NVIDIA DGX Spark (vLLM TP4, NVFP4 experts, lossless 8-bit dense, DFlash2)
 
 Serve [zai-org/GLM-5.3-Flash](https://huggingface.co/zai-org/GLM-5.3-Flash) (321B, 18B active) on four
-DGX Spark boxes (GB10, SM121, 121.7 GiB unified memory each) behind a RoCE switch, with NVFP4
-weights, Marlin MoE kernels, FP8 KV cache and the DFlash2 drafter with a per-request adaptive draft
-length. One OpenAI-compatible endpoint with tool calling, reasoning and images.
+DGX Spark boxes (GB10, SM121, 128 GB unified memory each) behind a RoCE switch. One OpenAI-compatible
+endpoint with tool calling, reasoning and images, 262k context, up to 32 concurrent sequences.
 
-Everything here was measured on the same fleet on 2026-09-18, single boot per variant, temperature 0,
-streaming, decode tok/s = (completion tokens − 1) / (last − first token). Numbers are single runs;
-repeat spread between two boots of the same config was 1–3 %.
+- **Weights:** NVIDIA's NVFP4 routed experts, untouched. The dense layers that checkpoint leaves in BF16
+  (attention, KDA, shared experts, dense MLP) are stored on 8-bit grids they already fit
+  (MXFP8 / block FP8), so they read at half the bytes with 0.25 % output error.
+- **Decode:** DFlash2 speculative decoding with a batch-uniform adaptive draft length, Marlin W4A16 MoE,
+  FP8 KV cache, RoCEnante one-shot RDMA collectives on both ConnectX-7 rails, and a set of exact
+  kernel and scheduling fixes listed below.
 
-## Results
+## Results (2026-09-28, this commit, fresh clone)
 
-Decode, one stream, `reasoning_effort` high / low:
+sparkDash 1.8.8 bench (256 tokens, temperature 0, 2 warm-up runs discarded; c1 per stream, c2+ aggregate):
 
-| Config | code | prose | JSON | agent turn (6k sys + tools) |
-|---|---|---|---|---|
-| official FP8, Triton, adaptive 3/7 (previous) | 53&nbsp;/&nbsp;59 | 27&nbsp;/&nbsp;32 | 54&nbsp;/&nbsp;68 | 37&nbsp;/&nbsp;83 |
-| NVFP4, Marlin, static draft 7 | 76&nbsp;/&nbsp;83 | 33&nbsp;/&nbsp;33 | 86&nbsp;/&nbsp;97 | 58&nbsp;/&nbsp;103 |
-| NVFP4 (RedHatAI), Marlin, adaptive 3/7 | 78&nbsp;/&nbsp;83 | 38&nbsp;/&nbsp;37 | 85&nbsp;/&nbsp;89 | 47&nbsp;/&nbsp;106 |
-| NVFP4, SGLang TP4, k=7 (`docs/sglang/`) | 83&nbsp;/&nbsp;75 | 36&nbsp;/&nbsp;35 | 90&nbsp;/&nbsp;91 | 46&nbsp;/&nbsp;109 |
-| **NVFP4, Marlin, adaptive draft 3/7 (this repo)** | **76&nbsp;/&nbsp;80** | **37&nbsp;/&nbsp;36** | **88&nbsp;/&nbsp;90** | **54&nbsp;/&nbsp;102** |
+| prompt | c1 | c2 | c4 | c8 | c16 |
+|---|---:|---:|---:|---:|---:|
+| prose | **71.4** | 107.9 | **151.0** | 250.2 | 330.9 |
+| code | 109.0 | | 181.9 | | 221.9 |
+| structured | 161.0 | | | | 701.2 |
+| JSON | 105.8 | | | | 545.2 |
 
-Per-stream decode at concurrency 1 / 2 / 3 (effort low, distinct prompts started together):
+- Prose c1 is the median of three runs; every other cell is one run. Run to run, acceptance moves prose by ±3-5 %; the decode step
+  time is the stable number: `bench/accept_probe.py` at c1 gives prose 39.0 ms per step at 2.2-2.3 tokens
+  per step, code 48.9 ms at 4.5-4.7, JSON 50.1 ms at 6.3 (two runs each, identical within 0.2 ms).
+- **Quality:** `bench/qeval.py` 75/75 (75 auto-scored checks: code run against hidden asserts, JSON
+  schema, numeric answers, format constraints, degeneration). KL divergence 0.0293 over 6618
+  teacher-forced positions against a BF16-attention reference (`bench/kld_probe.py`,
+  `bench/compare_kld_strict.py`).
+- **Prefill:** ~2.1-2.2k tok/s cold at 8k-32k. Prefill is not optimised yet (MoE 35 %, attention 16 %,
+  all-reduce 13 %, mHC 11 % of a prefill step).
+- **Boot:** ~2 min to `/health` 200 with warm JIT caches; 7.4 min on the first boot of a fresh clone (cold FlashInfer / Triton / TileLang caches).
 
-| Config | prose | code | JSON |
+The 2026-09-18 first release (prose c1 37 tok/s) and its comparison tables are in
+[docs/history-20260918.md](docs/history-20260918.md).
+
+## What is in the stack
+
+Each row was measured alone against the stack without it, in the same boot where possible
+(`overlay/glm_ab.py` switches kernels between two CUDA-graph sets in one boot; a result is
+promoted only when its confidence interval clears zero and an identical-arm control does not).
+
+| Piece | Where | Effect | Credit |
 |---|---|---|---|
-| official FP8, adaptive 3/7 | 29.5&nbsp;/&nbsp;23.1&nbsp;/&nbsp;18.7 | 60.9&nbsp;/&nbsp;37.6&nbsp;/&nbsp;31.2 | 65.5&nbsp;/&nbsp;48.0&nbsp;/&nbsp;37.8 |
-| **NVFP4, adaptive 3/7** | **37.0&nbsp;/&nbsp;29.5&nbsp;/&nbsp;25.6** | **77.6&nbsp;/&nbsp;58.6&nbsp;/&nbsp;49.6** | **91.1&nbsp;/&nbsp;70.2&nbsp;/&nbsp;57.1** |
-| NVFP4, SGLang TP4 + RoCEnante | 36.5&nbsp;/&nbsp;29.0&nbsp;/&nbsp;24.7 | 83.1&nbsp;/&nbsp;64.4&nbsp;/&nbsp;54.5 | 98.0&nbsp;/&nbsp;71.8&nbsp;/&nbsp;62.6 |
-| Mia 1.6.0 EXL3 4bpw, **two** Sparks, same prompts | 22.4&nbsp;/&nbsp;17.6&nbsp;/&nbsp;15.6 | 38.8&nbsp;/&nbsp;26.9&nbsp;/&nbsp;24.2 | 51.1&nbsp;/&nbsp;33.3&nbsp;/&nbsp;26.8 |
-| Mia 1.6.0 EXL3 **6bpw** (malaiwah K6), four Sparks TP4, adaptive-k, dense FP8 | 22.2&nbsp;/&nbsp;15.9&nbsp;/&nbsp;12.2 | 55.3&nbsp;/&nbsp;46.1&nbsp;/&nbsp;30.2 | 67.6&nbsp;/&nbsp;42.0&nbsp;/&nbsp;26.7 |
+| NVFP4 experts on Marlin (W4A16) | image, `MOE_BACKEND=marlin` | code +40 %, JSON +50 % vs the official FP8 checkpoint, same quality gate | NVIDIA, LibertAI, Red Hat AI checkpoints; alexellis's launch line |
+| Dense layers on 8-bit grids | `scripts/build_lossless8.sh`, `glm_quant_mix.py`, `overlay/qmix_patch.py` | step −7.5 ms, output error 0.25 % | tonyd2wild found the 18 GiB left in BF16 |
+| DFlash2 drafter, block-FP8 linears | `scripts/drafter_fp8.py` | draft graph 4.24 → 3.10 ms, acceptance unchanged | incoai (drafter) |
+| Batch-uniform draft length | `overlay/glm_levers_sched.py`, `profiles/levers_policy.json` | prose c4 136.7 → 148.2 (no eager mixed-k steps) | builds on jnardiello's adaptive-k scheduler and Reederey87's verify-only idea |
+| RoCEnante one-shot all-reduce / all-gather | `docker/Dockerfile.roce`, `roce/` | decode collectives over RDMA, both rails | Luke Alonso, Jason Cook (local-inference-lab/b12x#295, vllm#597); tonyd2wild's v11 port; rhys101 |
+| Replicated-linear TP split, FP8 draft head, one-gather top-k | `overlay/glm_ds_*.py` | dense −0.48 ms, bit-exact where marked | ported from our DeepSeek-V4.1 stack |
+| KDA verify stash, no-copy reads, fused flags | `overlay/glm_kda_stash*.py`, `kda_stash.py` | −0.90 ms (no-copy) | ours |
+| L2 prefetch of the next weights | `overlay/glm_l2_prefetch.py` | −0.5 ms | ours (from the DeepSeek-V4.1 stack) |
+| Router GEMM dedup | `overlay/glm_router_dedup.py` | −0.5 ms | vllm#55736 (JaredforReal), MiaAI-Lab issue #271 |
+| GDN metadata fast path | `overlay/glm_gdn_metadata_fast.py` | exact, host side | ours, on vLLM's builder |
+| Vocab-parallel target argmax, greedy path also for `min_tokens` | `overlay/glm_target_argmax.py` | no full-vocab gather at verify; −0.59 ms on `min_tokens` requests | vLLM's draft-side argmax from vllm#34049 (qizixi) |
+| Padded-vocab clamp in both samplers | `overlay/gumbel.py`, `rejection_sampler_utils.py` | correctness | vllm#50843 (alexbi29) |
+| DSA indexer kpool tail fixes | `GLM_KPOOL_FIX=1`, `overlay/glm5next_*.py`, `mla_indexer.py`, `mamba_hybrid.py` | correctness past the first KV block | vllm#57477 (JaredforReal), #58454 (mmastrac, on ivanium's #55219), #53906 (ZJY0516), root cause vcruz305 |
+| Prefill cadence + end drain | `overlay/glm_prefill_sched.py`, `glm_prefill_hooks.py` | decoders under a 32k prefill 1.3 → 7.3 tok/s; short newcomer at c4 −22 %; TTFT −8 %; step unchanged | jnardiello (E27, E27b/c, E29) |
+| Prefix cache for the DFlash2 draft group | `overlay/kv_cache_coordinator.py` | repeated 20k prompt 8.1 s → 0.63 s TTFT | tonyd2wild |
+| Fast weight loader, persistent FlashInfer JIT cache | `overlay/glm_fast_load.py`, `start.sh` | boot 271 → 128 s | vllm#58726 (Willian-Zhang) |
 
-Aggregate at c=3: prose 77, code 149, JSON 171 tok/s.
+Tried and rejected, with numbers: confidence-based verify cut (prose −5 to −9 %), Marlin tile M=32
+(+1.2 ms), fused mHC kernels (not bit-exact), a CUDA graph for the DFlash context KV (+0.05 ms),
+W4A4 / MXFP4 experts for prefill (1.1-1.3x on MoE at 16-21 % MoE output error).
 
-The two-Spark EXL3 row is [MiaAI-Lab/GLM-5.3-Flash-EXL3-2x-DGX-Sparks](https://github.com/MiaAI-Lab/GLM-5.3-Flash-EXL3-2x-DGX-Sparks)
-at `ca85576` (2026-09-18) with `GLM53_ADAPTIVE_K=ema`, `GLM53_DENSE_FP8=dense,kda`, `GLM53_COOP_GEOMETRY=1`, stock
-loader, measured with this harness on the same two nodes; her README's prose number uses a different prompt.
-Her quality gate is 74/75, the same as the official FP8 (EXL3 4bpw has KLD 0.025 vs NVFP4 0.061).
+## Build
 
-Quality gate (`bench/qeval.py`, 75 auto-scored checks: code executed against hidden asserts, JSON
-schema, numeric answers, format constraints, prose degeneration; greedy, c=1): NVFP4 adaptive 72/75 on
-three boots (LibertAI x2, RedHatAI), NVFP4 static 72/75, official FP8 74/75, SGLang NVFP4 68/75. The two
-FP8-vs-NVFP4 differences are one math and one reasoning task; at 55 primary tasks that is p=0.06, and a
-30-prompt harder set (`bench/hardset.py`: repo bug fixes, multi-step math, logic, facts, Polish and English
-prose, tools, JSON) gave identical verifiable answers on every item, with FP8 once running into the 4096-token
-reasoning cap. The gate catches degeneration, not subtle reasoning
-loss; see *Fidelity* below.
-
-EXL3 6bpw on four Sparks (quality gate 74/75, KLD 0.014, the closest-to-BF16 quant that fits) is 40 % slower
-on prose than NVFP4 on vLLM and falls off faster with concurrency, so "closer to BF16 at the same speed" is not
-available on this hardware; the fat E3 kernels are 4-bit only (`EXL3_FAT_KERNEL=0` for K6). On Mia's own
-hash-map prose prompt with thinking on, K6 TP4 reads 28.7 / 21.4 / 17.0.
-
-Marlin NVFP4 MoE tile sweep (12 tile overrides vLLM exposes, M = 1..32 tokens, 3 routings, numerics
-bit-close to stock): best candidate `gate_up 128x128 1-stage` +2.0 % on the MoE call, i.e. about 1 % of a
-decode step; `down_*` overrides are neutral to −15 %. No thin-decode win is available without a new kernel.
-
-What did not help (all measured, all rejected): `cudagraph_mode FULL_AND_PIECEWISE` (equal to
-`FULL_DECODE_ONLY`), `K_LO=2` instead of 3 (prose 38 → 31 tok/s: too short a verify window), `BATCHED_TOKENS=8192` (decode
-unchanged, prefill not measured), trimming the CUDA-graph capture list to `[1,2,4]` (−7 to −12 % at some
-concurrencies: the DFlash families are token-count indexed), a host-side shard prewarm during weight
-loading (the loader is CPU-bound at 3.9 s per shard, not disk-bound).
-
-## Time to task, not tokens per second
-
-Tokens per second is not what a user waits for; thinking length is. The same 30 harder prompts
-(`bench/hardset.py`: repo bug fixes, multi-step math, logic, facts, Polish and English prose, tools,
-JSON), greedy, one at a time, on this fleet (GLM NVFP4 adaptive at 37 tok/s prose, DeepSeek-V4.1-Flash
-production at 61 tok/s):
-
-| Model, thinking mode | wall time | answer tokens | thinking tokens | hit the 4096 cap | verifiable answers |
-|---|---|---|---|---|---|
-| GLM-5.3-Flash NVFP4, `reasoning_effort: high` | **324 s** | 15.6k | 4.9k | 0 | all correct |
-| DeepSeek-V4.1-Flash, `thinking: true` (its only mode) | 671 s | 49.1k | 39.1k | 6 | all correct |
-| GLM-5.3-Flash NVFP4, `reasoning_effort: max` | 1030 s | 55.8k | 42.3k | 7 | not judged |
-
-At `high` GLM finishes the same tasks 2.1x sooner than DeepSeek (code 2.3x, reasoning 2.7x, facts 1.5x,
-Polish prose 1.7x) with the same verifiable answers, because it thinks eight times less; at `max` it
-thinks as much as DeepSeek and its slower decode shows. `bench/compare_time.py` produces this table and a
-blind A/B review file.
-
-Agentic work is different: `bench/tasktime/` (six seeded repos, OpenCode non-interactive, time to green
-tests) gave DeepSeek 172 s for 6/6 and GLM 243-245 s for 6/6 and 5/6 on two runs (one wrong date fix,
-reported as passing because the agent ran the test file as a script). In tool loops both models think
-little, so per-token speed decides, and there DeepSeek's 61 tok/s wins.
-
-## The 18 GiB the checkpoint leaves in BF16
-
-`RedHatAI/GLM-5.3-Flash-NVFP4` quantises only the routed experts. Everything else sits in its
-`ignore` list, so reading its safetensors headers gives:
-
-| dtype | tensors | size | what |
-|---|---:|---:|---|
-| U8 (NVFP4 experts) | 36,288 | 141.75 GiB | routed experts, layers 3-44 |
-| F8_E4M3 | 37,152 | 24.47 GiB | expert scales, layer-45 experts |
-| **BF16** | **2,379** | **18.01 GiB** | attention 11.52, dense MLP 2.95, embeddings 1.18, head 1.18, vision 0.91 |
-
-Those 18 GiB are read on every decode step: 4.5 GiB per rank at TP4, about 18 ms at 250 GB/s.
-tonyd2wild quantised them and measured the step falling from 67.6 ms to 57 ms, with prose +27 %
-(https://github.com/tonyd2wild/GLM-5.3-Flash-NVFP4-1M-KV-4x-DGX-Spark).
-
-`scripts/quantize_dense_nvfp4.py` reproduces that offline, shard by shard, with no GPU and no
-calibration data, because the scheme is symmetric static weight-only. It writes the same tensor
-layout the routed experts already use, and moves the layer names out of `ignore`. Two schemes, and
-the self-test prints the cost of each on random weights of these shapes:
-
-| scheme | bytes per weight | relative RMS error | 18.01 GiB becomes |
-|---|---:|---:|---:|
-| `--scheme fp8` (default), block 128x128 | 1.00 | 2.6 % | ~9 GiB |
-| `--scheme nvfp4`, block 16 with a per-block scale search | 0.50 | 8.8 % | ~4.7 GiB |
-
-FP8 is the default here because it keeps most of the bandwidth win at a third of the error, and
-attention is the part RedHat deliberately did not quantise. Neither is validated by a boot yet:
-vLLM has to accept these shapes on SM121, and `bench/qeval.py` plus `bench/hardset.py` decide
-whether the quality holds. Embeddings, the head and the vision tower are left alone.
-
-## Fidelity: FP8 vs NVFP4
-
-NVFP4 is measurably further from BF16 than FP8 (KL divergence on malaiwah's panel: FP8 0.021, NVFP4
-0.061) and NVIDIA's own NVFP4 Flash card shows benchmark parity (GPQA-Diamond 92.2 → 92.1,
-Terminal-Bench 2.1 82.6 → 83.2, SciCode 56.2 → 57.7, MMMU-Pro 76.9 → 76.3). The checkpoint used here
-(LibertAI, ModelOpt weight-only NVFP4) is a different calibration from NVIDIA's, so treat those
-numbers as an analogy. The official FP8 checkpoint stays the reference; the same launcher serves it
-with `MODEL_DIR` pointing at it and `MOE_BACKEND=triton`.
+1. **Image**, on every node (no CUDA compile, a minute or two):
+   ```bash
+   docker build -f docker/Dockerfile.roce -t glm53-roce:v11-b58f34ea .
+   ```
+   It adds the b12x RoCEnante subset (Apache-2.0, `roce/b12x/LICENSE`, pinned in
+   `roce/b12x/PROVENANCE.json`) to tonyd2wild's `ghcr.io/tonyd2wild/vllm-glm53-flash` (vLLM `487ecf187`).
+2. **Weights**, on every node at the same path (CPU only):
+   ```bash
+   hf download nvidia/GLM-5.3-Flash-NVFP4 --local-dir ~/models/nvidia/GLM-5.3-Flash-NVFP4
+   scripts/build_lossless8.sh ~/models/nvidia/GLM-5.3-Flash-NVFP4 ~/models/glm-quant-mix
+   hf download incoai/GLM-5.3-Flash-DFlash2 --local-dir ~/models/incoai/GLM-5.3-Flash-DFlash2
+   python3 scripts/drafter_fp8.py ~/models/incoai/GLM-5.3-Flash-DFlash2 ~/models/incoai/GLM-5.3-Flash-DFlash2-fp8blk
+   ```
+   The drafter is CC BY-NC-ND 4.0: keep the re-encoded copy local.
+3. **NCCL** 2.30.7 built for the host (optional, `NCCL_HOST_DIR`; the image's NCCL also works).
 
 ## Quick start
 
 ```bash
-cp .env.example .env            # hosts, fabric, model paths
-./start.sh serve                # workers first, then the head; ~14 min to /health 200
-./start.sh status
+cp .env.example .env            # hosts, fabric, image and weight paths; sources profiles/production.env
+./start.sh serve                # workers first, then the head
+./start.sh status               # until health 200
 ./start.sh logs 0 80
-./start.sh stop
+./start.sh stop                 # stop and remove; stop-keep leaves the containers for inspection
 ```
 
-Prerequisites on every node: the image, `MODEL_DIR` and `DRAFT_DIR` at the same path, Docker with GPU
-support, `/dev/infiniband`, and an NCCL 2.30.7 build for the host if you set `NCCL_HOST_DIR` (the
-image's NCCL also works over a switch). The endpoint binds to loopback on the head; put your own
-tunnel or proxy in front of it.
+The endpoint binds to loopback on the head; put your own tunnel or proxy in front of it.
 
 ```bash
 curl http://127.0.0.1:8093/v1/chat/completions -H 'Content-Type: application/json' -d '{
-  "model": "GLM-5.3-Flash", "messages": [{"role": "user", "content": "What is 19 + 23?"}],
+  "model": "GLM-5.3-Flash-FP8", "messages": [{"role": "user", "content": "What is 19 + 23?"}],
   "chat_template_kwargs": {"reasoning_effort": "low"}}'
 ```
 
-`reasoning_effort` is `low`, `high` or `max` (the GLM template has no thinking-off switch; anything
-else maps to `max`). Tool calls use the `glm47` parser, reasoning the `glm45` parser.
+`reasoning_effort` is `low`, `high` or `max`. Tool calls use the `glm47` parser, reasoning the `glm45` parser.
 
-## What is in the box
+Every switch is a line in `profiles/production.env`; removing a line turns that piece off. The
+`serve` step first checks that no existing container already uses the target name or overlay path.
+
+## Benchmarks and gates
 
 ```
-start.sh                       serve / stop / status / logs for the 4-rank fleet, from .env
-overlay/adaptive_draft_scheduler.py   per-request draft length in {K_LO, K_HI} from an acceptance EMA
-overlay/adaptive_k_scheduler.py       jnardiello's adaptive verification length (base class)
-overlay/sparse_attn_indexer_kpool.py  tonyd2wild's SM121 indexer patch
-overlay/glm47_moe.py, abstract_parser.py   GLM parser fixes (literal tool delimiters, stop anchors)
-overlay/kv_cache_coordinator.py       tonyd2wild's prefix-cache repair for the DFlash2 draft group (patch script alongside)
-overlay/E=288,N=512,...GB10...json     Triton MoE config for the FP8 lane
-scripts/prewarm.py             page-cache prewarm sidecar (measured: no gain here, kept for NFS setups)
-bench/bench_matrix.py          single-stream matrix (code / prose / JSON / agent, high and low)
-bench/conc_bench.py            concurrency 1..3 per stream and aggregate
-bench/qeval.py, qeval_tasks.py 75-check quality gate, paired McNemar comparison
-docs/reference-plan-N2.json    the exact docker argv this README was measured with
+bench/qeval.py              75-check quality gate (run / compare)
+bench/kld_probe.py          teacher-forced top-20 logprobs from the live endpoint; compare_kld_strict.py
+bench/accept_probe.py       step ms and accepted tokens per step at c1 (the stable speed number)
+bench/conc_bench.py         concurrency sweep with 32 distinct prompts per type
+bench/prefill_bench.py      cold prefill tok/s by prompt length
+overlay/glm_ab.py, scripts/ab_inboot_glm.py   in-boot A/B of kernel switches with an A/A control
 ```
 
-## How the adaptive draft works
-
-DFlash2 proposes `K_HI` (7) tokens per step. On prose the target accepts about 1.2 of them, on code
-4.5 and on JSON 5.5, and every proposed token costs a verification row through all experts. The
-scheduler keeps an EMA of the fraction of the first three draft positions accepted per request and
-switches that request between `K_LO` (3) and `K_HI` (7) with hysteresis; the CUDA-graph families per
-running-batch size are the `num_speculative_tokens_per_batch_size` table in `start.sh`. Net effect
-against static k=7: prose +12 %, code and JSON unchanged.
-
-## Knobs (`.env`)
-
-| Variable | Default | Notes |
-|---|---|---|
-| `MODEL_DIR` / `MOE_BACKEND` | NVFP4 / `marlin` | official FP8 checkpoint: `triton` (needs the GB10 MoE JSON, mounted by the launcher) |
-| `K_HI` / `K_LO` | 7&nbsp;/&nbsp;3 | adaptive draft bounds; static k: set both equal |
-| `KV_BYTES` | 12 GiB | FP8 KV per rank; 262k context at 4 sequences |
-| `MAX_SEQS` | 4 | CUDA graphs are captured for the batch sizes this implies |
-| `CAPTURE_SIZES` | `[1,2,4,6,8,12,16,18,24,32]` | keep: the DFlash families need the token-count sizes |
-| `BATCHED_TOKENS` | 4096 | prefill chunk; a 53k prompt freezes other streams ~30 s at this size |
-| `PREWARM` | 1 | shard prewarm sidecar; harmless, no measured gain on local NVMe |
+`tests/` hold the unit tests; the CPU ones run inside the image
+(`docker exec ... python3 tests/<file>` with `PYTHONPATH=<overlay dir>` and `CUDA_VISIBLE_DEVICES=`),
+the `*_gpu.py` ones need a free GPU, so run them with the model stopped.
 
 ## Known limits
 
-- A long prefill (50k+) stalls the other decoding streams for its duration (chunked prefill shares
-  the step budget). `--long-prefill-token-threshold` trades newcomer TTFT for decoder responsiveness;
-  not enabled here.
-- Prefix caching works only with `overlay/kv_cache_coordinator.py` mounted (tonyd2wild's repair, `patch_prefix_cache_draft_group.py`
-  applied to the image's file): a repeated ~20k-token prompt goes from 8.1 s to 0.63 s TTFT with 94 % of blocks hit;
-  the stock v11 image reports 0 hits, so every agent turn re-prefills the whole conversation.
-- First batch-2 request after boot pays ~6 s of TTFT once (kernel JIT).
-- Boot is ~14 min; ~6.5 min of it is 74k per-expert `copy_` calls from mmap-backed tensors at ~0.4 GB/s
-  (profiled: iterator 7 s, copies 376 s, Marlin repack 8 s). A byte-bounded page-cache prewarm without the
-  boot-time cache flusher (`PREWARM=1`, `scripts/prewarm.py 4 8 6`) brings the shard loop from 7:48 to 6:32
-  and the whole boot to 13.6 min; the per-slice copy stays ~3 s per shard even with warm pages, so the cost
-  is inside the loader, not the disk. The same checkpoint loads in 8.5 min under SGLang. Do not run the
-  prewarm on the 11-shard RedHatAI layout with more than one shard of lookahead (18.6 GB each).
-- The Apache-licensed drafter `canada-quant/GLM-5.3-Flash-DFlash2-E` (8 layers) does not load on this image:
-  vLLM cannot unify its KV page size with the target's indexer cache (`page size is not divisible by the
-  maximum page size`); it needs canada-quant's own vLLM build. Open item, and the only lever left for prose.
-- SGLang TP4 (`docs/sglang/`): works on the DSV4.1 image with the GB10 TileLang tile patch (block_I 32, 1
-  stage, 128 threads); no adaptive draft for DFLASH there, speed equal to vLLM at the same k, quality gate
-  68/75. Not the production path.
-- With many images per prompt the API server aborts with `Expected a cached item for mm_hash=...` when
-  `--mm-processor-cache-gb` is small (0.25 GB did it at ~15 images x 3.4k tokens); the launcher now defaults to
-  4 GB (`MM_CACHE_GB`), 0 disables the cache entirely.
+- Prefill is ~1.7x behind recipes that use W4A4 experts and a sparse-MLA prefill plugin; that is the next
+  piece of work, without giving up the weights above.
+- GLM greedy output is not bit-reproducible across runs on this stack (batch-dependent kernels), so
+  exactness of a change is checked per kernel, not by comparing text.
 - The DFlash2 drafter is CC BY-NC-ND 4.0.
 
-See [CREDITS.md](CREDITS.md): the image, the launch line, the adaptive verification scheduler and the
-SM121 patches are other people's work; this repo adds the adaptive draft length, the four-node
-profile, the bench harness and the quality gate.
+See [CREDITS.md](CREDITS.md).
