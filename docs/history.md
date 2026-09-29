@@ -4,6 +4,20 @@
 
 Numbers below retain their original benchmark, sample count and configuration. Different benchmark prompts, reasoning settings, quantizations and boot conditions are not interchangeable baselines.
 
+## 2026-09-29: KDA checkpoint alignment fix (issue #2)
+
+With prefix caching on, a cache hit could resume the KDA recurrent state from 1,152 tokens too early. Prefill chunk
+ends were aligned to the 1,152-token drafter block, not the 2,304-token KDA state block, and the 2026-09-19
+coordinator repair exposed the stale checkpoint. `GLM_MAMBA_ALIGN_FIX=1` aligns chunk ends to the KDA block and
+materializes the last full block. `BATCHED_TOKENS` goes from 6912 to 6919, which keeps prefill at 6,912-token
+chunks.
+
+- **Cold/warm drift:** 0.25-0.36 → 0.02-0.04, against a cold-vs-cold floor of 0.04.
+- **Cold prefill, 99k tokens:** 30.60 → 30.50 s.
+- **sparkDash:** prose c1 85.0, code c1 126.9.
+
+New release gate: `bench/prefix_scan.py`. [Results](results/2026-09-29-mamba-align-fix.md).
+
 ## 2026-09-28: release results table (moved from the README on 2026-09-29)
 
 sparkDash 1.8.8, 256 new tokens, temperature 0, thinking off, idle endpoint, same boot as the gates

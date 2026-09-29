@@ -149,6 +149,54 @@ and calibration hashes: equal lengths alone cannot prove the two files came from
 the same complete prompts. `STRUCTURAL_PASS` is not a numerical quality gate.
 No KLD value is claimed here for an operator-supplied panel.
 
+### Shared-prefix concurrency gate (since 2026-09-29)
+
+qeval and KLD run at c1/c4 with fresh prompts, so they never read state back out of the prefix cache. Issue #2 was
+reported at c8 with eight requests sharing a ~99k-token prefix at temperature 0.8. The investigation found that a
+prefix-cache hit could resume the KDA recurrent state from 1,152 tokens too early (see
+[the fix](results/2026-09-29-mamba-align-fix.md)). Every release now also runs `bench/prefix_scan.py` on the idle,
+gated boot:
+
+```bash
+python3 -B bench/prefix_scan.py run NEW_LABEL --base http://127.0.0.1:8093 --out prefix-scan-NEW_LABEL.json
+```
+
+- **Prefix:** synthetic records, each with a random 5-letter code, so a correct quote cannot be rebuilt from a
+  pattern. It is sized through `/tokenize` to about 97-99k tokens, with every prompt at P mod 2304 in 300-900. That
+  is the phase at which the 2026-09-29 stale checkpoint was reachable.
+- **Sampled rounds:** 8 concurrent distinct tasks, temperature 0.8, top-p 0.95, 1,200 tokens, thinking on, 3
+  rounds. Each round runs cold (a fresh `cache_salt`) and then warm (same salt).
+- **Drift test:** 3 repetitions of cold A / cold B / warm A at temperature 0, thinking off, with logprobs.
+- **Solo lookups:** reported only.
+
+The gate tests the cache, not the model. GLM misreads near-duplicate records, and its greedy output is not
+reproducible within a boot, both cold and warm. So absolute correctness and cold/warm identity are reported, but
+not required. Pass requires all of:
+
+1. **Zero degenerate outputs:** no run of 8 or more identical tokens, no periodic loop of 48 or more tokens, no
+   non-finite logprobs.
+2. **Warm answers no worse than cold:** warm incorrect, misquoting and false-anomaly counts are each at most cold + 2.
+3. **Drift within the noise:** median cold-vs-warm mean |Δlogprob| over the common token prefix is at most
+   max(1.5 × median cold-vs-cold, 0.06). Every warm drift request must hit the cache (`/metrics`).
+4. **No warm-only scan anomalies:** no record that the warm scan flags and neither cold scan flags.
+
+Calibration on 2026-09-29, same prompt set and one boot per stack:
+- **The release without the fix FAILS.** Drift was 0.378 against a limit of 0.197, and the warm scan flagged
+  Records 2944-2976, the stale half block. On the issue's own prompt, drift was 0.25-0.36 against 0.065, with a
+  warm-only phantom record in 3 of 3 repetitions.
+- **With `GLM_MAMBA_ALIGN_FIX` and `BATCHED_TOKENS=6919` it PASSES:**
+  - drift 0.064 against a 0.153 floor, with no warm-only anomalies;
+  - warm/cold incorrect 5/4, 0 misquotes, 0 degenerate outputs in 48.
+
+  With the fix at 6912 it also passes: drift 0.135 against 0.127.
+
+Retain the JSON output. CPU tests (a fake server, no model; they include the saved release and fix numbers):
+
+```bash
+cd bench && python3 -B -S -m unittest -v test_prefix_scan_cpu
+python3 -B tests/test_glm_mamba_align_fix.py
+```
+
 Bundled source SHA256: qeval `a83ccf00919153cae3acfaee49390be57d2f447b30e12ba4b4cbb9ac364a694e`,
 qeval tasks `54719522d26996198c870264dfe5a93e2dd23f33436626c2477f1ac71206ffd2` (fixed extractor, 2026-09-29),
 KLD probe `75a2adbb16500fbafe86b01c19680ab64e9282522490e608fdc34559a7a5005e`.

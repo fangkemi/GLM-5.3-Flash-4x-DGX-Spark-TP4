@@ -15,6 +15,12 @@ endpoint with tool calling, reasoning and images, 262k context, up to 32 concurr
   kernels: +42 % cold prefill at 32k-128k over the 2026-09-28 release before the routed-MoE kernels and the
   gather route (+3-4 % more in their own A/B).
 
+**Correctness update (2026-09-29, issue #2).** With prefix caching on, a cache hit could resume the KDA recurrent
+state from 1,152 tokens too early, so the model misread the end of a shared prefix. This affected every profile
+since 2026-09-19. It is fixed by `GLM_MAMBA_ALIGN_FIX=1` together with `BATCHED_TOKENS=6919`, with no speed change,
+and gated by `bench/prefix_scan.py`. Existing installations need a coordinated restart with fresh container names.
+[Cause, bisect and measurements](docs/results/2026-09-29-mamba-align-fix.md).
+
 ## Results (2026-09-29)
 
 All numbers at the fleet's GPU clock cap of 2200 MHz. sparkDash 1.8.8: 256 new tokens, temperature 0, thinking

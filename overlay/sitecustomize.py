@@ -288,6 +288,13 @@ if any(k.startswith(("GLM_PREFILL_", "GLM_END_DRAIN", "GLM_IDLE_COALESCE")) for 
     import glm_prefill_hooks
     glm_prefill_hooks.register()
 
+# --- KDA state checkpoints at 2304-token block ends (overlay/glm_mamba_align_fix.py; issue #2) ---------------
+# Correctness fix, on unless GLM_MAMBA_ALIGN_FIX=0: prefill chunks end on mamba_block_size, and the last full
+# block is materialized, so a prefix-cache hit restores the state its hash claims.
+if os.environ.get("GLM_MAMBA_ALIGN_FIX", "1").strip() != "0":
+    import glm_mamba_align_fix
+    glm_mamba_align_fix.register()
+
 # ---- glm-bytes-20260928 (default-off candidates): windows M / B-MLA / D (GLM_L2_PREFETCH_MLA / _MLA_AR / _DRAFT,
 # on top of GLM_L2_PREFETCH{,_AR}=1) and the BF16 hc fn read (GLM_MHC_BF16W). At the END: after glm_l2_prefetch / _c
 # and after glm_small_gemv, whose Indexer source rewrite must run before window M wraps Indexer.forward.
