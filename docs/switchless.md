@@ -1,5 +1,12 @@
 # Optional four-Spark switchless ring
 
+> **Community-contributed, not tested on our fleet.** This mode was contributed by
+> [@othexmr](https://github.com/othexmr) in [PR #1](https://github.com/knapcio/GLM-5.3-Flash-4x-DGX-Spark-TP4/pull/1)
+> and rebased onto the 2026-09-29 release. Our four Sparks sit behind a RoCE switch, so we check only that the
+> switched launch is unchanged and that the switchless launch renders; we cannot boot it. If it breaks for you,
+> please [open an issue](https://github.com/knapcio/GLM-5.3-Flash-4x-DGX-Spark-TP4/issues) with the items listed
+> under [Reporting a problem](#reporting-a-problem).
+
 `TRANSPORT=switchless` adapts this recipe to four directly cabled DGX Sparks.
 The default remains `switched`, with the original launch arguments. This is a
 transport port: checkpoint conversion, model kernels, scheduling, graph shapes,
@@ -28,7 +35,7 @@ including the KDA boundary repair, are retained.
   also needs the four-device support in that build. A two-device-only release is
   not sufficient merely because its filename is the same. See
   [Alex Ellis / OpenFaaS Ltd's switchless NCCL project](https://github.com/alexellis/switchless-nccl)
-  and the [othexmr four-PF source profile](https://github.com/othexmr/switchless-nccl/blob/feat/four-pf-source-integration/docs/dual-pf.md)
+  and the [othexmr four-PF source profile](https://github.com/othexmr/switchless-nccl/blob/94c2669e82ea47e9d85dafee9ef46b85b931d21a/docs/dual-pf.md)
   for the transport source and patch provenance. Select a tested artifact and record its SHA256;
   do not substitute stock upstream NCCL or infer patch support from its version.
 - The same prepared weights and image prerequisites as the switched recipe.
@@ -70,24 +77,59 @@ fields it needs. It does not acquire environment variables or whole Docker
 inspection output. Existing containers and overlapping runtime mounts still
 cause a refusal, including stopped containers needed for provenance.
 
+## What the ring gives up from the current profile
+
+`profiles/current.env` is tuned on the switched fleet. On the ring every switch in it still loads, and none changes
+the output, but the ones built on RoCEnante have nothing to act on:
+
+| Profile piece | On the ring |
+|---|---|
+| `GLM_ROCE_ALLREDUCE=1` (RoCEnante one-shot all-reduce and all-gather) | forced to `0`; every collective runs on the patched NCCL ring |
+| `B12X_ROCE_HCA` | removed (the image default stays, unused) |
+| `GATHER_ROUTE=1` (`GLM_ROCE_AG_DIM0_NCCL`, `overlay/glm_roce_gather_route.py`) | inert: it only moves gathers off RoCEnante, and they are all on NCCL already |
+| `GLM_ROCE_PROXY_CPUS=auto` | inert: there is no RoCE proxy thread to pin |
+| L2 prefetch window A (`GLM_L2_PREFETCH=1`) | works |
+| L2 prefetch windows B / C / D (`GLM_L2_PREFETCH_AR`, `GLM_L2_PREFETCH_MLA_AR`, `GLM_L2_PREFETCH_DRAFT`, `L2PF_V2=1`) | arm but never fire: they are forked from the RoCEnante all-reduce hook, which never runs |
+| Everything else (kernels, drafting, scheduler, prefill package) | unchanged |
+
+So expect decode to be slower than the switched numbers in the README: every decode-size all-reduce pays NCCL's
+latency instead of RoCEnante's, and opposite nodes talk through a transit node.
+
+RoCEnante needs a direct path to every peer. The DeepSeek-V4.1 recipe gets one on a ring with SparkRing's
+path-aware RoCEnante and hardware-forwarded opposite-node paths (`DSV41_ROCE_RING`, research-only, see its
+[switchless-ring notes](https://github.com/knapcio/DeepSeek-V4.1-Flash-4x-DGX-Spark-TP4/blob/main/docs/switchless-ring.md)).
+That has not been ported to this recipe; a ring port of `roce/glm_roce` would be the next step and is welcome as a PR.
+
 ## Evidence and limits
 
 The transport adaptation reached model readiness and completed three High
 92-case tool-eval runs on an older pinned recipe (`dddb0347`) in a private
-four-Spark lab window. This branch is based on `364eca1`, which includes newer
-upstream model changes; that complete combination has **not** been hardware
+four-Spark lab window. It was then rebased onto the 2026-09-29 release (`3ab5ca0`), which includes newer
+model changes; that complete combination has **not** been hardware
 qualified. No performance claim, generic topology support or equivalence to the
 switched deployment is established by these CPU tests. Do not transplant the
 historical scores as results for this branch.
 
-Tests compare all four default switched command hashes against the original
-launcher, prove that only transport arguments change in switchless mode, reject
+Tests compare all four default switched command hashes against the 2026-09-29 release
+launcher (`3ab5ca0`), prove that only transport arguments change in switchless mode, reject
 bad/conflicting configuration before any remote command, and exercise artifact
 hash/architecture/mount-boundary and selected-field inventory failures. They
 run without Docker, SSH, GPU access or model imports:
 
 ```sh
-python3 -m unittest discover -s tests -v
-python3 -m unittest discover -s bench -p 'test_*.py' -v
+python3 -m unittest tests/test_switchless.py -v    # also part of tests/run_cpu_tests.sh
 bash -n start.sh scripts/transport.sh
 ```
+
+## Reporting a problem
+
+Please open an issue with:
+
+- the `TRANSPORT=switchless` part of your env file (hosts and IPs can be redacted) and the output of
+  `DRY=1 ENV_FILE=<your file> ./start.sh serve`;
+- which NCCL build you use (source commit or release, the SHA256 you pinned) and your cabling / addressing;
+- from rank 0, the NCCL lines of `./start.sh logs 0 400`: `NCCL_SWITCHLESS_RING_ONLY`, `ListenerRouting`,
+  `Subnet-aware routing`, `Connected all rings`, and any `NCCL WARN` or error;
+- where it stopped: the library check, the preflight, NCCL init, model load, CUDA graph capture, or a wrong or
+  garbled answer after `/health` turned 200.
+

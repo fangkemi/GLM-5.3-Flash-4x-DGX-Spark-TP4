@@ -194,6 +194,16 @@ extensions (dense 8-bit kernels, FlashKDA, routed-MoE prefill kernels) are JIT-b
 cached under the overlay directory; a first boot of a fresh tree takes longer. The `serve` step first checks that
 no existing container already uses the target name or overlay path.
 
+## Without a switch (community-contributed)
+
+Four Sparks cabled as a ring, with no RoCE switch, can run this stack with `TRANSPORT=switchless`
+(`.env.switchless.example`, [docs/switchless.md](docs/switchless.md)). It needs a patched NCCL 2.30.7 that you build
+and pin by SHA256, and it turns RoCEnante off, so decode is slower than the numbers above. Contributed by
+[@othexmr](https://github.com/othexmr) ([PR #1](https://github.com/knapcio/GLM-5.3-Flash-4x-DGX-Spark-TP4/pull/1)).
+Our fleet is switched, so this mode is **not tested here**: the switched launch is checked to be byte-identical,
+the switchless one only to render. Please [open an issue](https://github.com/knapcio/GLM-5.3-Flash-4x-DGX-Spark-TP4/issues)
+if it breaks for you ([what to include](docs/switchless.md#reporting-a-problem)).
+
 ## Benchmarks and gates
 
 ```
@@ -206,7 +216,7 @@ bench/final_bench.py        long-prompt KL panel, T > 0 garble scan, sparkDash p
 overlay/glm_ab.py, scripts/ab_inboot_glm.py   in-boot A/B of kernel switches with an A/A control
 ```
 
-`tests/run_cpu_tests.sh` runs every CPU test (28 suites; `GLM_IMAGE_SRC` points the source-drift checks at an
+`tests/run_cpu_tests.sh` runs every CPU test (31 suites; `GLM_IMAGE_SRC` points the source-drift checks at an
 extracted copy of the image's vLLM, or run it inside the image). The `*_gpu.py` tests need a free GPU, so run them
 with the model stopped.
 
@@ -223,6 +233,7 @@ with the model stopped.
 - [docs/install.md](docs/install.md): host prerequisites, NCCL, image build, launch and preflight rules
 - [docs/weights.md](docs/weights.md): preparing the lossless8 target and the FP8 drafter
 - [docs/runtime.md](docs/runtime.md), [docs/validation.md](docs/validation.md): runtime switches and the validation scope
+- [docs/switchless.md](docs/switchless.md): four Sparks without a switch (community-contributed, untested here)
 - [docs/results/](docs/results/): raw result files per release
 
 See [CREDITS.md](CREDITS.md) for authors and pull requests, and [NOTICE](NOTICE) with [LICENSES/](LICENSES/) for licence boundaries.

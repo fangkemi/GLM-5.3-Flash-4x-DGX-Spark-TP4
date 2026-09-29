@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-09-29 (switchless ring, community PR #1)
+- Optional `TRANSPORT=switchless` for four Sparks cabled as a ring without a switch (patched NCCL pinned by
+  SHA256, RoCEnante off), contributed by @othexmr. Not tested on our switched fleet. The default switched launch
+  is byte-identical; the container preflight now reads only names and mounts from `docker inspect`.
+  [docs/switchless.md](docs/switchless.md).
+
 ## 2026-09-29 (hotfix, 3edfbc9)
 - KDA state checkpoints now align to the 2304-token block (`GLM_MAMBA_ALIGN_FIX=1`, `BATCHED_TOKENS=6919`). With prefix
   caching on, a cache hit could resume the KDA recurrent state 1,152 tokens early (issue #2); affected every profile
