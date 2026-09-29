@@ -12,8 +12,7 @@ endpoint with tool calling, reasoning and images, 262k context, up to 32 concurr
   sampling at T > 0 couples the draft to the target's noise so more of it is accepted. Marlin W4A16 MoE,
   FP8 KV cache, RoCEnante one-shot RDMA collectives on both ConnectX-7 rails.
 - **Prefill:** sharded mHC, FlashKDA, Triton sparse MLA, dense 8-bit GEMMs on cuBLAS and fused routed-MoE
-  kernels: +42 % cold prefill at 32k-128k over the 2026-09-28 release before the routed-MoE kernels and the
-  gather route (+3-4 % more in their own A/B).
+  kernels, about 3,100 tok/s cold at 8k-128k.
 
 **Correctness update (2026-09-29, issue #2).** With prefix caching on, a cache hit could resume the KDA recurrent
 state from 1,152 tokens too early, so the model misread the end of a shared prefix. This affected every profile
@@ -21,50 +20,33 @@ since 2026-09-19. It is fixed by `GLM_MAMBA_ALIGN_FIX=1` together with `BATCHED_
 and gated by `bench/prefix_scan.py`. Existing installations need a coordinated restart with fresh container names.
 [Cause, bisect and measurements](docs/results/2026-09-29-mamba-align-fix.md).
 
-## Results (2026-09-29)
+## Current results
 
-All numbers at the fleet's GPU clock cap of 2200 MHz. sparkDash 1.8.8: 256 new tokens, temperature 0, thinking
-off, idle endpoint, two warm-up prose c1 runs discarded; c1 is the median of 3 runs, c4 the median of 2, c16 one
-run. Prefill: sparkDash prefill bench, cold (salted), after a 4k warm-up, median of 2. RigMark 1.0.0 decode
-screen: code / prose / structured at effort low, median of 4 passes (not a conformant receipt).
-
-Both columns of the tables come from one gate window (gate 0003, 2026-09-29 00:43-01:50), same boot order and
-benchmark code. The right column is this stack without the five additions marked "not in gate 0003" further down.
-
-**This release, fresh clone, everything on** (the gates and every number are in
-[docs/results/2026-09-29-release.md](docs/results/2026-09-29-release.md)): cold boot from a new tree 561 s with every
-piece armed on 4/4 ranks; sparkDash prose c1 80.3, code c1 126.3 (quick bench, median of 2 series); cold
-prefill 3015 / 3122 / 3165 tok/s at 8k / 32k / 128k (runs 2-3 after a restart); short-prompt TTFT 326 ms.
+2026-09-29 stack (`profiles/current.env`), GPU clock cap 2200 MHz. sparkDash 1.8.8: 256 new tokens, temperature 0,
+thinking off, idle endpoint, two warm-up prose c1 runs discarded; c1 is the median of 3 runs, c4 the median of 2,
+c16 one run. Prefill: sparkDash prefill bench, cold (salted), after a 4k warm-up, median of 2. RigMark 1.0.0 decode
+screen: code / prose / structured at effort low, median of 4 passes (not a conformant receipt). Decode and RigMark
+rows are from gate 0003 (2026-09-29 00:43-01:50); the release additions on top of it (device-side draft length,
+routed-MoE prefill kernels, gather route, L2 tables, c4 cost table, KDA checkpoint fix) were each measured in their own
+A/B and are listed in the table further down. Every gate and number: [docs/results/2026-09-29-release.md](docs/results/2026-09-29-release.md).
 
 **Decode, per-stream tok/s (aggregate in brackets)**
 
-| prompt type | 2026-09-28 release | 2026-09-29 stack, gate 0003 | change |
+| prompt type | c1 | c4 | c16 |
 |---|---:|---:|---:|
-| prose c1 | 72.3 | 83.8 | +16.0 % |
-| code c1 | 109.5 | 125.2 | +14.4 % |
-| JSON c1 | 99.7 | 114.8 | +15.1 % |
-| prose c4 | 42.0 (161.4) | 39.5 (154.2) | -6.0 % |
-| code c4 | 55.8 (211.5) | 56.9 (210.8) | +1.9 % |
-| JSON c4 | 65.6 (252.0) | 72.8 (281.0) | +11.0 % |
-| prose c16 (1 run) | 22.1 (335.6) | 21.7 (326.1) | -1.9 % |
+| prose | **83.8** | 39.5 (154.2) | 21.7 (326.1) |
+| code | 125.2 | 56.9 (210.8) | |
+| JSON | 114.8 | 72.8 (281.0) | |
 
-**Prefill, cold**
+**Prefill, cold, tok/s** (fresh-clone release boot, runs 2-3 after a restart)
 
-| prompt | 2026-09-28 release | 2026-09-29 stack, gate 0003 | change |
-|---|---:|---:|---:|
-| 32k tokens | 2150 tok/s, TTFT 15.3 s | 3053 tok/s, TTFT 10.7 s | +42.0 % |
-| 128k tokens | 2127 tok/s, TTFT 61.6 s | 3036 tok/s, TTFT 43.2 s | +42.7 % |
+| 8k | 32k | 128k |
+|---:|---:|---:|
+| 3015 | 3122 | 3165 |
 
-**RigMark 1.0.0 decode screen, tok/s**
-
-| workload | 2026-09-28 release | 2026-09-29 stack, gate 0003 | change |
-|---|---:|---:|---:|
-| code | 95.5 | 110.4 | +15.6 % |
-| prose | 51.7 | 57.6 | +11.4 % |
-| structured | 140.5 | 146.4 | +4.2 % |
-
-The full RigMark protocols on the same boot (effort low, 1.0.0 / 1.1.0): code 108.3 / 109.0, prose 58.7 / 57.7,
-structured 146.6 / 147.0 tok/s, prefill 8k / 32k / 64k cold 2802 / 3052 / 3058 tok/s, C4 aggregate 174.5 / 172.6 tok/s.
+**RigMark 1.0.0 decode screen, tok/s:** code 110.4, prose 57.6, structured 146.4. The full RigMark protocols
+(effort low, 1.0.0 / 1.1.0): code 108.3 / 109.0, prose 58.7 / 57.7, structured 146.6 / 147.0 tok/s, C4 aggregate
+174.5 / 172.6 tok/s. Short-prompt TTFT 326 ms.
 
 - **Quality:** KL divergence 0.0285 over 6618 teacher-forced positions against a BF16-attention reference
   (`bench/kld_probe.py`, `bench/compare_kld_strict.py`), and 0.0098 over 98,500 positions of four 16.5k-40k-token
@@ -80,8 +62,8 @@ structured 146.6 / 147.0 tok/s, prefill 8k / 32k / 64k cold 2802 / 3052 / 3058 t
   CPython and Go source): 0.531 nats/token.
 - **Boot:** 3.6 min to `/health` 200 with warm caches, 9.4 min on the first boot of a fresh tree (every JIT cold).
 
-Earlier measurements, including the 2026-09-28 release table measured without the clock cap:
-[measurement history](docs/history.md) and the [2026-09-18 first release](docs/history-2026-09-18.md).
+Earlier measurements and the comparisons with previous releases are in [docs/history.md](docs/history.md) and the
+[2026-09-18 first release](docs/history-2026-09-18.md); what changed when is in [CHANGELOG.md](CHANGELOG.md).
 
 ## What is in the stack
 

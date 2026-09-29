@@ -18,6 +18,39 @@ chunks.
 
 New release gate: `bench/prefix_scan.py`. [Results](results/2026-09-29-mamba-align-fix.md).
 
+## 2026-09-29: comparison with the 2026-09-28 release (moved from the README)
+
+Both columns from one gate window (gate 0003, 2026-09-29 00:43-01:50), same boot order and benchmark code, GPU clock
+cap 2200 MHz; the right column is the 2026-09-29 stack before the release additions (device-side draft length,
+routed-MoE prefill kernels, gather route, L2 tables, c4 cost table, KDA checkpoint fix).
+
+**Decode, per-stream tok/s (aggregate in brackets)**
+
+| prompt type | 2026-09-28 release | 2026-09-29 stack, gate 0003 | change |
+|---|---:|---:|---:|
+| prose c1 | 72.3 | 83.8 | +16.0 % |
+| code c1 | 109.5 | 125.2 | +14.4 % |
+| JSON c1 | 99.7 | 114.8 | +15.1 % |
+| prose c4 | 42.0 (161.4) | 39.5 (154.2) | -6.0 % |
+| code c4 | 55.8 (211.5) | 56.9 (210.8) | +1.9 % |
+| JSON c4 | 65.6 (252.0) | 72.8 (281.0) | +11.0 % |
+| prose c16 (1 run) | 22.1 (335.6) | 21.7 (326.1) | -1.9 % |
+
+**Prefill, cold**
+
+| prompt | 2026-09-28 release | 2026-09-29 stack, gate 0003 | change |
+|---|---:|---:|---:|
+| 32k tokens | 2150 tok/s, TTFT 15.3 s | 3053 tok/s, TTFT 10.7 s | +42.0 % |
+| 128k tokens | 2127 tok/s, TTFT 61.6 s | 3036 tok/s, TTFT 43.2 s | +42.7 % |
+
+**RigMark 1.0.0 decode screen, tok/s**
+
+| workload | 2026-09-28 release | 2026-09-29 stack, gate 0003 | change |
+|---|---:|---:|---:|
+| code | 95.5 | 110.4 | +15.6 % |
+| prose | 51.7 | 57.6 | +11.4 % |
+| structured | 140.5 | 146.4 | +4.2 % |
+
 ## 2026-09-28: release results table (moved from the README on 2026-09-29)
 
 sparkDash 1.8.8, 256 new tokens, temperature 0, thinking off, idle endpoint, same boot as the gates

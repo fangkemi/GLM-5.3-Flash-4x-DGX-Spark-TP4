@@ -1,0 +1,22 @@
+# Changelog
+
+## 2026-09-29 (hotfix, 3edfbc9)
+- KDA state checkpoints now align to the 2304-token block (`GLM_MAMBA_ALIGN_FIX=1`, `BATCHED_TOKENS=6919`). With prefix
+  caching on, a cache hit could resume the KDA recurrent state 1,152 tokens early (issue #2); affected every profile
+  since 2026-09-19. No speed change. [Details](docs/results/2026-09-29-mamba-align-fix.md).
+- New release gate `bench/prefix_scan.py`: c8 shared-long-prefix scan at T > 0, cold vs warm.
+
+## 2026-09-29 (release, d80f4fd / 982e258 / 8f49b5c)
+- Draft truncation with the verify length chosen on the GPU at one request (shared lambda with the host policy),
+  c4 cost table refit, certified LM head with min_tokens, Gumbel-coupled drafting at T > 0.
+- Prefill: routed-MoE prefill kernels (fused SiLU epilogue, down tile, exact sum+shared add), large dim-0 gathers
+  over NCCL, prefill package (sharded mHC, FlashKDA, Triton sparse MLA, dense 8-bit prefill GEMMs).
+- Corrected L2 prefetch tables; qeval number-extractor fix and a three-run quality rule.
+- [Results](docs/results/2026-09-29-release.md); comparison with 2026-09-28 in [docs/history.md](docs/history.md).
+
+## 2026-09-28 (release, adb55e3 / 1f5b9eb)
+- Lossless 8-bit dense layers, RoCEnante image, decode kernels, LeversScheduler; the repository becomes the serving
+  production stack.
+
+## 2026-09-18 (first release)
+- NVFP4 experts on Marlin, adaptive draft length, kpool patch; [archived README](docs/history-2026-09-18.md).
