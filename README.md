@@ -67,6 +67,11 @@ structured 146.6 / 147.0 tok/s, prefill 8k / 32k / 64k cold 2802 / 3052 / 3058 t
   this release; qeval moves by 2-3 points run to run on every stack here (the 2026-09-28-based stack read 73 / 75 / 72
   in one boot), so it is run three times against a same-window reference, not as a single-run floor. T > 0 scan
   (`bench/final_bench.py tscan`, 35 outputs at T 1.0 / 0.6 and mixed batches): 0 garbled outputs.
+- **Public benchmarks** (greedy, thinking off, 8 requests at a time, 2026-09-29 on the d80f4fd configuration, whose
+  decode path is the same as this release apart from the shared draft-length state): GSM8K test, first 250
+  questions, 246 / 250 = 98.4 %; HumanEval pass@1 157 / 164 = 95.7 % (programs run in a container without network).
+  Teacher-forced NLL over eight public 3,000-token texts (English and Polish Wikipedia, two public-domain literary works,
+  CPython and Go source): 0.531 nats/token.
 - **Boot:** 3.6 min to `/health` 200 with warm caches, 9.4 min on the first boot of a fresh tree (every JIT cold).
 
 Earlier measurements, including the 2026-09-28 release table measured without the clock cap:
