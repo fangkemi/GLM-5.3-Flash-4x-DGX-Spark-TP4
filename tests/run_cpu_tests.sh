@@ -34,7 +34,7 @@ run test_glm_roce_cpu "${PY[@]}" roce/tests/test_glm_roce_cpu.py
 run test_glm_mamba_align_fix "${PY[@]}" -B tests/test_glm_mamba_align_fix.py
 run test_prefix_scan_cpu bash -c "cd bench && python3 -B -S -m unittest test_prefix_scan_cpu"
 run pytest_kda_stash_mhc_runtime "${PY[@]}" -m pytest -q -p no:cacheprovider tests/test_kda_stash_boundary.py \
-  tests/test_mhc_fused.py tests/test_runtime_package.py
+  tests/test_mhc_fused.py tests/test_runtime_package.py tests/test_switchless.py
 if [[ -n ${GLM_VLLM_SRC:-} ]]; then
   run test_glm_prefill_sched "${PY[@]}" tests/test_glm_prefill_sched.py
 else

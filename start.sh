@@ -115,7 +115,7 @@ case $CMD in
     if [[ ${TRANSPORT:-switched} == switchless ]]; then
       printf -v library_code '%q' "$(cat scripts/check_switchless_nccl.py)"
       for h in "${HOSTS[@]}"; do
-        rssh "$h" "python3 -c $library_code --library $NCCL_HOST_DIR/libnccl.so.2.30.7 --sha256 $SWITCHLESS_NCCL_SHA256"
+        rssh "$h" "python3 -B -S -c $library_code --library $NCCL_HOST_DIR/libnccl.so.2.30.7 --sha256 $SWITCHLESS_NCCL_SHA256"
       done
     fi
     # Inspect every preserved container before any source synchronization.
