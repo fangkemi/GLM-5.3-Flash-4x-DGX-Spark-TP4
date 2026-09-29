@@ -103,3 +103,24 @@ for use, conversion and redistribution questions.
 CUDA, NCCL, PyTorch, Triton, FlashInfer, CUTLASS and other dependencies in
 external images retain their respective licences. This source notice is
 not an inventory or relicensing of every component in a container image.
+
+9. 2026-09-29 additions
+FlashKDA: overlay/glm_flashkda_csrc/ vendors the csrc/ subset of FlashKDA
+(MoonshotAI and the vLLM FlashKDA contributors), taken from Matt Mastracci's
+fork branch wip-fp32-state at fb4dfc96cb22fdf2fff3986330031184b9dcf2b9, with the
+local changes listed in overlay/glm_flashkda_csrc/PROVENANCE. MIT,
+Copyright (c) 2026 MoonshotAI: overlay/glm_flashkda_csrc/LICENSE and
+LICENSES/MIT-FlashKDA.txt. CUTLASS / CuTe headers are not vendored; the build
+uses the copy shipped with FlashInfer in the image.
+vLLM Marlin: overlay/glm_pf3_csrc/ vendors vLLM's Marlin and MoE Marlin headers
+at the commit in overlay/glm_pf3_csrc/VLLM_COMMIT, unmodified (Apache-2.0,
+"Copyright contributors to the vLLM project"); overlay/glm_pf3_jit.py applies
+its documented patch at build time. overlay/glm_dense_fast_csrc/glmk_common.cuh
+ports vLLM's Marlin dequantisation and MMA helpers line for line (Apache-2.0).
+Test data: bench/kld_long_texts.json holds this repository's README and
+excerpts of vLLM source files (Apache-2.0), used only as long prompts for the
+teacher-forced KL panel.
+Ideas without code: the Gumbel-coupled drafting method (llama.cpp-lab pull
+request 26, Jim Routh) and the KDA conv split, sparse-MLA prefill and MoE
+prefill epilogue ideas from Matt Mastracci's GLM-5.3-Flash 4x GX10 recipe are
+reimplemented here; no source from those projects is included.

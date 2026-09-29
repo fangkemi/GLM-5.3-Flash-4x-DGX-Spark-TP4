@@ -184,7 +184,7 @@ def bad_specs():
     raises(ab.configure, "0|1|check")
     ab = fresh({"GLM_AB_VARIANTS": "2", "GLM_AB_V2": "GLM_KDA_STASH=1"})
     raises(ab.configure, "GLM_AB_VARIANTS=2")
-    ab = fresh({"GLM_AB_VARIANTS": "9"})
+    ab = fresh({"GLM_AB_VARIANTS": "11"})
     raises(ab.configure, "at most")
 
 

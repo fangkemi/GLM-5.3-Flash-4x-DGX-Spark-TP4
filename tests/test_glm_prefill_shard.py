@@ -399,7 +399,7 @@ def load_stock():
 OPS = NS(hc_expand=_hc_expand, hc_contract=_hc_contract)
 
 
-def run(M, mode, exact=False, rs_order="ring", keying=True, dg=False, check=False, L=6):
+def run(M, mode, exact=False, rs_order="ring", keying=True, dg=False, check=False, L=6, pad=False):
     group = ThreadGroup(rs_order)
     USE_DG["on"] = dg
     reset_kernels(keying)
@@ -413,7 +413,7 @@ def run(M, mode, exact=False, rs_order="ring", keying=True, dg=False, check=Fals
         if mode == "stock":
             out = model.forward(ids, pos, None)
             return out, None
-        own = ps.Ownership(ps.Coll(group), M, mode, exact)
+        own = ps.Ownership(ps.Coll(group), M, mode, exact, pad=pad)
         checker = ps._check_fused(own, rt) if check else None
         out = ps.model_forward(model, own, ids, pos, None, OPS, checker)
         return out, own.counts
@@ -546,6 +546,75 @@ def test_metadata_gate():
         assert ps.pure_or_mixed_prefill(md(num_decodes=2, num_prefill_tokens=2296), "kda", 2304)
     finally:
         ps.MIXED = False
+
+
+def test_pad_rows_not_divisible_by_tp():
+    """GLM_PREFILL_SHARD_PAD: row counts that are not a multiple of 4 (2049..2051, 2303, 4097)."""
+    L, aux = 6, 2
+    for M in (2049, 2050, 2051, 2303, 4097):
+        try:
+            run(M, "shard", L=L)
+            raise AssertionError("an unpadded ownership of a non-multiple row count must be refused")
+        except RuntimeError as exc:
+            assert "not divisible" in str(exc), exc
+        stock, _ = run(M, "stock", L=L)
+        same, _ = run(M, "shard", rs_order="same", pad=True, L=L)
+        exact, _ = run(M, "shard", exact=True, pad=True, L=L)
+        ring, _ = run(M, "shard", pad=True, L=L)
+        comm, _ = run(M, "comm", rs_order="same", pad=True, L=L)
+        for r in range(W):
+            h = same[r][0][0] if isinstance(same[r][0], tuple) else same[r][0]
+            assert h.shape[0] == M, h.shape
+            assert eq(same[r][0], stock[r][0]), f"padded shard (same-order RS) differs from stock at M={M} rank={r}"
+            assert eq(exact[r][0], stock[r][0]), f"padded EXACT differs from stock at M={M} rank={r}"
+            assert eq(comm[r][0], stock[r][0]), f"padded comm (same-order RS) differs at M={M} rank={r}"
+            assert eq(ring[r][0], ring[0][0]), "padded ring shard differs across ranks"
+        d = maxdiff(ring[0][0], stock[0][0])
+        assert d < 0.25, d
+        c = same[0][1]
+        assert c["rs"] == 2 * L and c["ag"] == 2 * L + aux and c["padcopy"] == 2 * L, c
+        assert exact[0][1]["ar"] == 2 * L and exact[0][1]["padcopy"] == 0, exact[0][1]
+    # divisible row counts never copy
+    res, _ = run(2304, "shard", pad=True, L=L)
+    assert res[0][1]["padcopy"] == 0, res[0][1]
+
+
+def test_pad_ownership_geometry():
+    group = ThreadGroup()
+    for M, want_real in ((2049, [513, 513, 513, 510]), (2050, [513, 513, 513, 511]), (2051, [513, 513, 513, 512]),
+                         (2052, [513, 513, 513, 513])):
+        reals = []
+        for r in range(W):
+            group.bind(r)
+            own = ps.Ownership(ps.Coll(group), M, "shard", False, pad=True)
+            reals.append(own.real)
+            t = torch.arange(M, dtype=torch.float32)[:, None].repeat(1, 3)
+            loc = own.local(t)
+            assert loc.shape[0] == own.q
+            assert torch.equal(loc[: own.real, 0], torch.arange(own.lo, own.lo + own.real, dtype=torch.float32))
+            assert float(loc[own.real:].abs().sum()) == 0.0
+        assert reals == want_real, (M, reals)
+
+
+def test_per_call_switch_through_glm_ab():
+    fake = types.ModuleType("glm_ab")
+    fake.ACTIVE = True
+    fake.KNOWN = {"GLM_PREFILL_SHARD": "raw", "GLM_PREFILL_SHARD_PAD": "bool"}
+    fake.truthy = lambda v: v is not None and str(v).strip().lower() not in ("", "0", "off", "false", "no")
+    cur = {"GLM_PREFILL_SHARD": "0", "GLM_PREFILL_SHARD_PAD": "0"}
+    fake.env = lambda name, default=None: cur.get(name, default)
+    sys.modules["glm_ab"] = fake
+    try:
+        assert ps.call_mode() == "off" and ps.call_pad() is False
+        cur.update(GLM_PREFILL_SHARD="1", GLM_PREFILL_SHARD_PAD="1")
+        assert ps.call_mode() == "shard" and ps.call_pad() is True
+        cur.update(GLM_PREFILL_SHARD="comm")
+        assert ps.call_mode() == "comm"
+        fake.ACTIVE = False                       # harness off: the install-time values
+        assert ps.call_mode() == ps.MODE and ps.call_pad() == ps.PAD
+    finally:
+        del sys.modules["glm_ab"]
+    assert ps.call_mode() == ps.MODE
 
 
 def main():

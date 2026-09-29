@@ -69,7 +69,14 @@ overlay (`SPEC_PROBE_CONTROL=/overlay/profiles/levers_policy.json`); only the he
 Without it the scheduler silently falls back to the launch table, so keep it in place.
 
 Cold caches are supported: FlashInfer, Triton, TileLang, CUDA, Torch/Inductor,
-vLLM, b12x and the L2 helper compile/populate their per-node caches on first use.
+vLLM, b12x, the L2 helper and the overlay's own CUDA extensions compile/populate
+their per-node caches under `$OVERLAY_REMOTE/cache` on first use. The overlay
+extensions are JIT-built with the image's nvcc from the sources in `overlay/`:
+the dense 8-bit kernels (`glm_dense_fast_csrc/`, `cache/glm_dense_fast`), FlashKDA
+(`glm_flashkda_csrc/`, about 25 s per node, then cached; it self-tests on every
+rank and fails closed to the stock prefill), the mHC BF16 kernel and the routed-MoE
+prefill kernels (`glm_pf3_csrc/`, about 15 s per node on the first long prefill;
+a failed build leaves every path on stock).
 No undocumented precompiled cache is required for correctness. A cold boot can
 take substantially longer than a warm boot. Warm cache contents are specific to
 source/compiler/GPU versions and are not distributed as a replacement for source.
@@ -82,8 +89,9 @@ only verified auxiliary PIDs using Linux pidfds; it never removes containers or
 uses process-name-wide killing. A new deployment needs a fresh CTN and mount path.
 Restart an unchanged preserved deployment with explicit docker start, peers first.
 Memory compaction is an optional operational aid for fragmentation, not a hidden
-recipe helper or correctness prerequisite. Optional automatic warmup/compaction
-is off in current.env; schedule controlled
+recipe helper or correctness prerequisite. current.env turns compaction on
+(`COMPACT_MEM=1`; it is skipped without a NOPASSWD rule for
+`/usr/local/sbin/spark-compact-mem.sh`); boot warm-up is off, so schedule controlled
 warmup yourself before measurement. `DRY=1 bash start.sh serve` prints remote commands and the intended synchronization
 without making SSH/Docker/rsync calls. It does not validate remote readiness.
 

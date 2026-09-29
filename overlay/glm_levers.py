@@ -330,6 +330,7 @@ def install_mintok(_mod) -> None:
             mask_stop(out, start, eidx, pos, lb.min_lens.gpu, lb.num_stop_token_ids.gpu, lb.stop_token_ids.gpu)
             return out
 
+        masked._glm_lv_mintok_mask = True   # glm_cert_head accepts this one instance patch (same rule it applies)
         lp._apply_head = masked
         try:
             return orig_fast(runner, hidden_states, input_batch, how)

@@ -24,8 +24,15 @@ mismatches per block. Identical-text fractions are still reported, as informatio
 FAIL (exit 1): rank disagreement, a block replaying another set, no valid rows, any argmax check mismatch, or
 (with --require-identical) a greedy text that differs between variants.
 
+--conc N (N >= 2; added for the 2026-09-28 speed screen): every row is a BATCH of N concurrent greedy requests
+(the prompts cycled into batches of N) instead of one request. steps = the target CUDA-graph replays of rank 0
+during the batch (glm_ab_status before / after: one replay per decode/verify step; the eager prefill steps are not
+counted; falls back to drafts / N, marked in the row, if the counter did not move); step_ms = (last finish - the
+slowest first token) / steps; tps = aggregate tokens / (first send to last finish); tok_per_step = tokens / steps.
+Pairing, rounds, CI and replay checks are unchanged. (vllm:iteration_tokens_total is not exported by this image.)
+
 usage: python3 ab_inboot_glm.py LABEL [--rounds 6] [--drop-rounds 1] [--max-tokens 256] [--prompts builtin|FILE]
-                                 [--abab] [--require-identical] [--base URL]
+                                 [--conc N] [--abab] [--require-identical] [--base URL]
 Raw rows: ~/glm-inboot/LABEL-<time>.jsonl; summary appended to ~/glm-inboot/summary.jsonl.
 """
 import argparse
@@ -157,6 +164,25 @@ class Engine:
                 "tokens": (usage or {}).get("completion_tokens"), "text": text}
 
 
+def run_one(eng, p, max_tokens):
+    """One request (p a string) or a batch of concurrent requests (p a list): returns the chat() fields, for a
+    batch total = first send to last finish, ttft = the slowest first token, tokens summed, texts joined."""
+    if not isinstance(p, list):
+        return eng.chat(p, max_tokens)
+    from concurrent.futures import ThreadPoolExecutor
+    t0 = time.monotonic()
+
+    def one(q):
+        r = eng.chat(q, max_tokens)
+        r["end"] = time.monotonic()
+        return r
+
+    with ThreadPoolExecutor(len(p)) as ex:
+        rs = list(ex.map(one, p))
+    return {"ttft": max(r["ttft"] for r in rs), "total": max(r["end"] for r in rs) - t0,
+            "tokens": sum(r["tokens"] or 0 for r in rs), "text": "\x01".join(r["text"] for r in rs)}
+
+
 def replay_delta(before, after):
     """Per rank: target replays per set (index N = shared) between two status snapshots."""
     out = []
@@ -249,6 +275,7 @@ def main():
     ap.add_argument("--max-tokens", type=int, default=256)
     ap.add_argument("--prompts", default="builtin")
     ap.add_argument("--effort", default="low")
+    ap.add_argument("--conc", type=int, default=1, help="requests per row, sent concurrently (default 1)")
     ap.add_argument("--abab", action="store_true")
     ap.add_argument("--require-identical", action="store_true",
                     help="FAIL on any greedy text difference between variants (not meaningful on GLM KSN)")
@@ -259,6 +286,12 @@ def main():
 
     eng = Engine(args.base, args.model, args.effort, args.switch_timeout)
     prompts = load_prompts(args.prompts)
+    conc = max(1, args.conc)
+    if conc > 1:   # cycle the prompts into batches of `conc`; kind = the batch's kinds
+        nb = max(1, -(-len(prompts) // conc))
+        flat = [prompts[i % len(prompts)] for i in range(nb * conc)]
+        prompts = [("+".join(sorted({k for k, _ in flat[b * conc:(b + 1) * conc]})) + f"@c{conc}",
+                    [p for _, p in flat[b * conc:(b + 1) * conc]]) for b in range(nb)]
     outdir = os.path.expanduser("~/glm-inboot")
     os.makedirs(outdir, exist_ok=True)
     raw_path = os.path.join(outdir, f"{args.label}-{time.strftime('%Y%m%d-%H%M%S')}.jsonl")
@@ -282,7 +315,7 @@ def main():
         for v in range(nvar):                    # warm pass, every variant, off the clock
             eng.switch(v)
             for _, p in prompts:
-                eng.chat(p, args.max_tokens)
+                run_one(eng, p, args.max_tokens)
         print(f"warm pass done in {time.time() - t_start:.0f} s", flush=True)
         try:
             for rnd in range(args.rounds):
@@ -293,20 +326,29 @@ def main():
                     eng.switch(v)
                     before = eng.status()
                     for i, (kind, p) in enumerate(prompts):
+                        nreq = len(p) if isinstance(p, list) else 1
+                        s0 = eng.status() if nreq > 1 else None
                         m0 = eng.metrics()
-                        r = eng.chat(p, args.max_tokens)
+                        r = run_one(eng, p, args.max_tokens)
                         time.sleep(0.05)
                         m1 = eng.metrics()
                         steps = int(round(m1["drafts"] - m0["drafts"]))
                         dec = r["total"] - r["ttft"]
+                        if nreq > 1:
+                            d = replay_delta(s0, eng.status())
+                            rep = sum(d[0]) if d else 0
+                            steps = rep if rep > 0 else int(round(steps / nreq))
+                            r["steps_src"] = "replays" if rep > 0 else "drafts/n"
                         toks = r["tokens"] or 0
                         row = {"round": rnd, "variant": v, "prompt": i, "kind": kind, "ttft": round(r["ttft"], 4),
                                "decode_s": round(dec, 4), "tokens": toks, "steps": steps,
                                "accepted": int(round(m1["accepted"] - m0["accepted"])),
-                               "foreign": int(round(m1["success"] - m0["success"])) != 1,
+                               "foreign": int(round(m1["success"] - m0["success"])) != nreq,
                                "step_ms": round(dec / steps * 1000, 3) if steps > 0 and dec > 0 else None,
-                               "tps": round((toks - 1) / dec, 2) if dec > 0 and toks > 1 else None,
-                               "tok_per_step": round((toks - 1) / steps, 4) if steps > 0 else None,
+                               "tps": (round((toks - 1) / dec, 2) if dec > 0 and toks > 1 else None) if nreq == 1 else
+                                      (round(toks / r["total"], 2) if r["total"] > 0 and toks else None),
+                               "tok_per_step": round((toks - nreq) / steps, 4) if steps > 0 else None,
+                               "conc": nreq, "steps_src": r.get("steps_src", "drafts"),
                                "text_sha": hashlib.sha1(r["text"].encode()).hexdigest()[:12],
                                "t": round(time.time(), 2), "text": r["text"]}
                         rows.append(row)
@@ -335,6 +377,7 @@ def main():
 
     kept = [r for r in rows if r["round"] >= args.drop_rounds]
     summary = {"label": args.label, "time": time.strftime("%Y-%m-%d %H:%M:%S"), "raw": raw_path, "config": config,
+               "conc": conc,
                "rounds": args.rounds, "dropped_rounds": args.drop_rounds, "max_tokens": args.max_tokens,
                "prompts": args.prompts, "abba": not args.abab, "foreign_rows": sum(r["foreign"] for r in rows),
                "wall_s": round(time.time() - t_start, 1), **summarize(kept, nvar)}

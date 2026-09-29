@@ -1,12 +1,31 @@
 # Runtime provenance and publication boundary
 
-## Current release (2026-09-28)
+## Current release (2026-09-29)
 
-The serving profile is `profiles/current.env`: the LVKP-S-L2 base (lossless8 target, block-128 FP8
+The serving profile is `profiles/current.env`. On top of the 2026-09-28 release (below) it turns on:
+
+- decode kernels: head-gate GEMV (`GLM_GATE_GEMV`), early attention plan (`GLM_EARLY_PLAN`), Marlin launch tuning
+  (`GLM_MARLIN_TUNE_ON` with the SHA-pinned table), dense 8-bit decode kernels (`GLM_DENSE_FAST`), L2 windows for
+  MLA and the drafter, the BF16 mHC hc function (`GLM_MHC_BF16W`), the fused drafter conv and the RoCE proxy pin;
+- the certified target head (`GLM_CERT_HEAD`, also for `min_tokens` requests);
+- draft-shape truncation (`GLM_DRAFT_TRUNC`, 7 drafts scheduled, verify length chosen per step) with every verify
+  family k = 1..7 captured (`SPEC_TABLE`, `CAPTURE_SIZES`), device-side selection at one request (`DEVSELECT=1`) and
+  the batch > 1 cost refit (`TRUNC_COST=c4fit`);
+- Gumbel-coupled drafting at T > 0 (`GLM_GUMBEL_COUPLED`);
+- the prefill package: mHC sharding with row padding, KDA conv split, FlashKDA, Triton sparse MLA, dense 8-bit
+  prefill GEMMs, routed-MoE prefill kernels (`PF3_ARM=samemath`) and large row gathers over NCCL (`GATHER_ROUTE=1`);
+- corrected L2 prefetch tables (`L2PF_V2=1`) and memory compaction before boot (`COMPACT_MEM=1`).
+
+Knob values and what each one turns off are documented at the end of the profile. Every module is default-off and
+inert when its switch is off; modules that build CUDA code (dense 8-bit kernels, FlashKDA, routed-MoE kernels,
+device-side selection) fall back to the stock path when the build or their self-check fails, and log it.
+
+### 2026-09-28 base
+
+The 2026-09-28 profile: the LVKP-S-L2 base (lossless8 target, block-128 FP8
 incoai DFlash2 drafter, batch-uniform adaptive 3/7, kpool fixes, KDA stash with the 2026-09-27
 [boundary repair](results/2026-09-27-kda-boundary-fix.md), L2 prefetch), the GDN metadata fast path
 and router dedup, plus three additions:
-
 - `GLM_ARGMAX_CLAMP=1`: vLLM #50843's padded-vocab clamp in the Gumbel and rejection samplers
   (`overlay/gumbel.py`, `overlay/rejection_sampler_utils.py`, mounted over the image files) and in
   `overlay/glm_target_argmax.py`. Bit-exact for every valid token id.
@@ -20,10 +39,10 @@ and router dedup, plus three additions:
 
 `overlay/sitecustomize.py` is the file the fleet serves. It also carries default-off registrations
 for experiments that were measured and not adopted (in-boot A/B harness, verify cut, draft-context
-graph, fused mHC, Marlin M=32, KV-lens exactness check, prefill sharding). Each is inert unless its
+graph, fused mHC, Marlin M=32, KV-lens exactness check, context-lookup drafter). Each is inert unless its
 environment switch is set; `profiles/current.env` sets none of them.
 
-## How this release was checked
+## How the 2026-09-28 release was checked (2026-09-29: see results/2026-09-29-release.md)
 
 - **Launch identity:** a `DRY=1` launch of this checkout was compared with `docker inspect` of the
   containers serving before the release. Arguments and bind mounts were identical; the environment

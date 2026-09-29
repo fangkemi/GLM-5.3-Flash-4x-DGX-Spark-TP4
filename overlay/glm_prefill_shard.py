@@ -48,6 +48,20 @@ Modes
                            hc op on the gathered full rows next to the sharded one, compare bit
                            for bit, agree over TP; on any difference that row count runs stock
                            from then on (and this chunk keeps the stock result).
+  GLM_PREFILL_SHARD_PAD=1  (2026-09-28, default off) also shard chunks whose row count is not a
+                           multiple of the TP size (the last chunk of almost every prompt, and a
+                           whole short prompt 3 times in 4). Ownership runs over ceil(M/4)*4 rows:
+                           the last rank's owned state carries 1-3 zero rows, every reduce-scatter
+                           gets a zero-padded copy of the partial (one [M, 4096] copy per sublayer,
+                           only on such chunks), every all-gather is narrowed back to the M real
+                           rows (a view). Attention and MLP/MoE still see exactly the M real rows.
+                           EXACT stays bit-identical (stock all-reduce on the unpadded partial);
+                           the RS mode has the RS mode's numerics.
+
+In-boot A/B (overlay/glm_ab.py armed): GLM_PREFILL_SHARD (raw: 0|1|comm) and GLM_PREFILL_SHARD_PAD
+(bool) are switchable keys (registered in sitecustomize). The union of the variants installs the
+adapter; every prefill forward reads the runtime variant's values, so one boot can time stock,
+comm and shard chunks side by side. EXACT / MIN_ROWS / MIXED / CHECK stay static.
 
 Scope: eager forwards only (never under CUDA-graph capture or torch.compile), TP4, PP1, DP1,
 no expert parallel, no sequence-parallel MoE, every layer an mHC layer. Every decision depends on
@@ -76,13 +90,41 @@ def _flag(name: str, default: str = "0") -> bool:
     return os.environ.get(name, default).strip().lower() in ("1", "on", "true", "yes")
 
 
+def parse_mode(raw) -> str:
+    raw = "" if raw is None else str(raw).strip().lower()
+    return "comm" if raw == "comm" else ("shard" if raw in ("1", "on", "true", "shard") else "off")
+
+
 _RAW = os.environ.get("GLM_PREFILL_SHARD", "0").strip().lower()
-MODE = "comm" if _RAW == "comm" else ("shard" if _RAW in ("1", "on", "true", "shard") else "off")
+MODE = parse_mode(_RAW)
 EXACT = _flag("GLM_PREFILL_SHARD_EXACT")
 MIN_ROWS = int(os.environ.get("GLM_PREFILL_SHARD_MIN_ROWS", "2048"))
 MIXED = _flag("GLM_PREFILL_SHARD_MIXED")
 CHECK = _flag("GLM_PREFILL_SHARD_CHECK")
+PAD = _flag("GLM_PREFILL_SHARD_PAD")
 TP = 4
+
+
+def _ab():
+    import sys
+    ab = sys.modules.get("glm_ab")
+    return ab if ab is not None and getattr(ab, "ACTIVE", False) else None
+
+
+def call_mode() -> str:
+    """Mode of this forward: the install MODE, or the runtime variant's value when glm_ab is armed and knows
+    the key (rank-invariant: the switch is a collective at the same step on every rank)."""
+    ab = _ab()
+    if ab is None or "GLM_PREFILL_SHARD" not in ab.KNOWN:
+        return MODE
+    return parse_mode(ab.env("GLM_PREFILL_SHARD", "0"))
+
+
+def call_pad() -> bool:
+    ab = _ab()
+    if ab is None or "GLM_PREFILL_SHARD_PAD" not in ab.KNOWN:
+        return PAD
+    return ab.truthy(ab.env("GLM_PREFILL_SHARD_PAD", "0"))
 _LOG_FIRST = 8
 
 # Engine sources of ghcr.io/tonyd2wild/vllm-glm53-flash@sha256:4def0ef6... (vLLM 0.1.dev20051+
@@ -229,22 +271,46 @@ class Coll:
 class Ownership:
     """Row ownership for one sharded forward. mode: 'shard' or 'comm'."""
 
-    def __init__(self, coll: Coll, rows: int, mode: str, exact: bool):
+    def __init__(self, coll: Coll, rows: int, mode: str, exact: bool, pad: bool = False):
         self.c = coll
         self.rows = rows
         self.mode = mode
         self.exact = exact and mode == "shard"
-        self.q = rows // coll.world
+        w = coll.world
+        if rows % w and not pad:
+            raise RuntimeError(f"glm-prefill-shard: {rows} rows not divisible by {w} and padding is off")
+        self.q = -(-rows // w)                       # owned rows per rank (ceil)
+        self.padded = self.q * w
+        self.pad = self.padded - rows                # zero rows appended at the end (0 unless pad)
         self.lo = coll.rank * self.q
-        self.counts = {"rs": 0, "ag": 0, "ar": 0, "aux": 0}
+        self.real = max(0, min(self.q, rows - self.lo))   # real rows among this rank's owned rows
+        self.counts = {"rs": 0, "ag": 0, "ar": 0, "aux": 0, "padcopy": 0}
+
+    def _pad_to(self, t):
+        """[rows, ...] -> [padded, ...] with zero rows at the end (a copy; only when pad > 0)."""
+        if not self.pad:
+            return t
+        out = t.new_empty((self.padded, *t.shape[1:]))
+        out[: self.rows].copy_(t)
+        out[self.rows:].zero_()
+        self.counts["padcopy"] += 1
+        return out
 
     def local(self, t):
-        """Full-row tensor -> this rank's rows (a contiguous view)."""
+        """Full-row tensor -> this rank's rows (a contiguous view; the short last owner gets zero rows)."""
         if self.mode == "comm":
             return t
         if t.shape[0] != self.rows:
             raise RuntimeError(f"glm-prefill-shard: row mismatch {t.shape[0]} != {self.rows}")
-        return t.narrow(0, self.lo, self.q)
+        if self.real == self.q:
+            return t.narrow(0, self.lo, self.q)
+        import torch
+        part = t.narrow(0, min(self.lo, self.rows), self.real)
+        return torch.cat([part, t.new_zeros((self.q - self.real, *t.shape[1:]))], 0)
+
+    def _full(self, t):
+        """Padded full rows -> the real rows (a contiguous prefix view)."""
+        return t if not self.pad else t.narrow(0, 0, self.rows)
 
     def gather(self, t, aux: bool = False):
         """Owned rows -> full rows (attention / MLP input, aux capture, exit)."""
@@ -255,7 +321,7 @@ class Ownership:
         self.counts["ag"] += 1
         if aux:
             self.counts["aux"] += 1
-        return self.c.all_gather(t.contiguous())
+        return self._full(self.c.all_gather(t.contiguous()))
 
     def reduce(self, partial):
         """Full-row TP partial -> reduced rows (owned rows, or full rows in comm mode)."""
@@ -265,15 +331,15 @@ class Ownership:
         if self.mode == "comm":
             self.counts["rs"] += 1
             self.counts["ag"] += 1
-            return self.c.all_gather(self.c.reduce_scatter(partial))
+            return self._full(self.c.all_gather(self.c.reduce_scatter(self._pad_to(partial))))
         if self.exact:
             self.counts["ar"] += 1
-            return self.c.all_reduce(partial).narrow(0, self.lo, self.q)
+            return self.local(self.c.all_reduce(partial))
         self.counts["rs"] += 1
-        return self.c.reduce_scatter(partial)
+        return self.c.reduce_scatter(self._pad_to(partial))
 
     def rows_ctx(self):
-        """Kernel choices keyed on the full chunk while an owned-row mHC op runs."""
+        """Kernel choices keyed on the full chunk (the real row count) while an owned-row mHC op runs."""
         return _logical(self.rows if self.mode == "shard" else None)
 
 
@@ -465,9 +531,9 @@ def candidate_context(positions, intermediate_tensors, rt: _Runtime):
     """Rank-invariant gates (shape, mode, graph state). Returns the forward context or None."""
     import torch
     rows = positions.shape[0]
-    if MODE == "off" or rt.validated is False or rows in rt.bad_rows:
+    if MODE == "off" or call_mode() == "off" or rt.validated is False or rows in rt.bad_rows:
         return None
-    if intermediate_tensors is not None or rows < MIN_ROWS or rows % TP:
+    if intermediate_tensors is not None or rows < MIN_ROWS or (rows % TP and not call_pad()):
         return None
     if torch.compiler.is_compiling() or torch.cuda.is_current_stream_capturing():
         return None
@@ -544,7 +610,7 @@ def install(model_module, coll_factory=None) -> None:
         import torch
         from vllm.distributed import get_tp_group
         g = get_tp_group()
-        mine = (MODE, EXACT, MIN_ROWS, MIXED, CHECK)
+        mine = (MODE, EXACT, MIN_ROWS, MIXED, CHECK, PAD)
         votes = [None] * g.world_size
         torch.distributed.all_gather_object(votes, mine, group=g.cpu_group)
         if any(v != mine for v in votes):
@@ -552,8 +618,8 @@ def install(model_module, coll_factory=None) -> None:
         if g.world_size != TP:
             raise RuntimeError(f"glm-prefill-shard: needs TP{TP}, got {g.world_size}")
         self._glm_ps_rt = _Runtime()
-        logger.warning("GLM_PREFILL_SHARD_READY mode=%s exact=%d min_rows=%d mixed=%d check=%d",
-                       MODE, int(EXACT), MIN_ROWS, int(MIXED), int(CHECK))
+        logger.warning("GLM_PREFILL_SHARD_READY mode=%s exact=%d min_rows=%d mixed=%d check=%d pad=%d",
+                       MODE, int(EXACT), MIN_ROWS, int(MIXED), int(CHECK), int(PAD))
 
     def forward(self, input_ids, positions, intermediate_tensors=None, inputs_embeds=None, **kwargs):
         rt = getattr(self, "_glm_ps_rt", None)
@@ -569,16 +635,17 @@ def install(model_module, coll_factory=None) -> None:
         rows = positions.shape[0]
         if ctx is None or not pure_or_mixed_prefill(ctx.attn_metadata, rt.kda_name, rows):
             return orig_forward(self, input_ids, positions, intermediate_tensors, inputs_embeds, **kwargs)
-        own = Ownership(_coll(), rows, MODE, EXACT)
+        mode = call_mode()
+        own = Ownership(_coll(), rows, mode, EXACT, pad=call_pad())
         checker = None
-        if CHECK and MODE == "shard" and rows not in rt.checked_rows:
+        if CHECK and mode == "shard" and rows not in rt.checked_rows:
             rt.checked_rows.add(rows)
             checker = _check_fused(own, rt)
         out = model_forward(self, own, input_ids, positions, inputs_embeds, ops, checker)
         if rt.reports < _LOG_FIRST:
             rt.reports += 1
-            logger.warning("GLM_PREFILL_SHARD rank=%d rows=%d owner_rows=%d mode=%s exact=%d %s",
-                           own.c.rank, rows, own.q, MODE, int(own.exact), own.counts)
+            logger.warning("GLM_PREFILL_SHARD rank=%d rows=%d owner_rows=%d pad=%d mode=%s exact=%d %s",
+                           own.c.rank, rows, own.q, own.pad, mode, int(own.exact), own.counts)
         return out
 
     cls.__init__ = __init__

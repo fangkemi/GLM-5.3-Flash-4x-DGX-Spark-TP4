@@ -4,6 +4,53 @@
 
 Numbers below retain their original benchmark, sample count and configuration. Different benchmark prompts, reasoning settings, quantizations and boot conditions are not interchangeable baselines.
 
+## 2026-09-28: release results table (moved from the README on 2026-09-29)
+
+sparkDash 1.8.8, 256 new tokens, temperature 0, thinking off, idle endpoint, same boot as the gates
+below. Two warm-up prose c1 runs discarded before each series.
+
+Commit 1f5b9eb / beca637, fresh clone. GPU clocks were not capped then (about 2450-2550 MHz; the fleet runs at a
+2200 MHz cap since the evening of 2026-09-28), so these rows are not directly comparable with the 2026-09-29 tables.
+The same stack re-measured at the cap in the 2026-09-29 gate window read sparkDash prose c1 72.3, code c1 109.5.
+
+**Decode, aggregate tok/s (per stream in brackets)**
+
+| prompt type | c1 | c2 | c4 | c8 | c16 |
+|---|---:|---:|---:|---:|---:|
+| prose | **71.8** | 107.6 (54.1) | **156.9** (40.6) | 233.2 (30.2) | 329.2 (21.7) |
+| code | 114.8 | 159.7 (83.1) | 208.9 (56.5) | 297.3 (40.5) | 342.7 (24.5) |
+| structured | 158.4 | 259.3 (129.7) | 356.6 (92.2) | 645.9 (82.8) | 821.3 (53.5) |
+| JSON | 104.0 | 173.7 (86.8) | 260.2 (68.7) | 358.7 (48.7) | 504.0 (35.0) |
+
+Prose c1 is the median of three runs (73.1 / 69.3 / 71.8) and prose c4 the median of three
+(143.8 / 156.9 / 176.4); every other cell is one run. The gate series on the same boot half an hour
+earlier read prose c1 71.4 (74.3 / 71.4 / 62.9) and c4 151.0. Acceptance moves prose by 3-5 % run to
+run, and sparkDash uses different prompts at each concurrency, so per-stream values are not
+comparable across columns. The stable number is the decode step: `bench/accept_probe.py` at c1 gives
+prose 39.0 ms per step at 2.2-2.3 tokens per step, code 48.9 ms at 4.5-4.7, JSON 50.1 ms at 6.3 (two
+runs each, identical within 0.2 ms).
+
+**Prefill, cold, tok/s by prompt length** (sparkDash prefill bench, one pass, same boot; 256k is
+258,073 tokens, the longest prompt that fits 262,144 with the reply)
+
+| 4k | 16k | 32k | 64k | 128k | 256k |
+|---:|---:|---:|---:|---:|---:|
+| 2098 | 2243 | 2255 | 2264 | 2229 | 2150 |
+
+Time to first token at 32k is 14.5 s, at 128k 58.8 s, at 256k 120 s. sparkDash's prefill filler is
+one repeated token (unique prefix per size, so the prefix cache does not apply); on varied random-word
+text `bench/prefill_checked.py` measured 2,202 / 2,209 / 2,197 tok/s at 16k / 32k / 64k on the
+2026-09-27 stack, within 2 % of these. Prefill is not optimised yet: in a prefill step MoE takes 35 %, attention
+16 %, all-reduce 13 % and mHC 11 %.
+
+- **Quality:** `bench/qeval.py` 75/75 (75 auto-scored checks: code run against hidden asserts, JSON
+  schema, numeric answers, format constraints, degeneration). KL divergence 0.0293 over 6618
+  teacher-forced positions against a BF16-attention reference (`bench/kld_probe.py`,
+  `bench/compare_kld_strict.py`).
+- **Boot:** ~2 min to `/health` 200 with warm JIT caches; 7.4 min on the first boot of a fresh clone (cold FlashInfer / Triton / TileLang caches).
+
+These numbers include the 2026-09-27 KDA speculative-block-boundary fix ([notes](results/2026-09-27-kda-boundary-fix.md)).
+
 ## 2026-09-28: fresh-clone release (argmax clamp, prefill scheduler, shipped policy)
 
 The first release booted from a fresh clone, including the image build. Adds the vLLM #50843 argmax

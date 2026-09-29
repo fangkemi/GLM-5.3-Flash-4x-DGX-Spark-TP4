@@ -19,6 +19,8 @@ Switchable keys (KNOWN). The adapters read them through env(name) at call time:
   GLM_KDA_NOCOPY           0|1         glm_kda_nocopy dispatcher (inside the target decode/verify graphs)
   GLM_KDA_STASH            0|1         glm_kda_stash dispatcher + its _forward flag (inside the target graphs)
   GLM_ROUTER_FP32OUT       0|1         glm_kda_stash.install_router GateLinear (inside the target graphs)
+  GLM_GATE_GEMV            0|1         glm_small_gemv Indexer head gate (inside the target graphs)
+  GLM_ROUTER_GEMV          0|1|fp32    glm_small_gemv GateLinear (inside the target graphs)
 Install gates are read once per process (sitecustomize, glm_exact_hooks.register, glm_kda_stash.register), so
 configure() switches each key ON in os.environ when any variant enables it (the "union"): the code is installed
 everywhere and dispatches per call. The pre-union base values travel to child processes in GLM_AB_BASE.
@@ -55,13 +57,21 @@ KNOWN = {
     "GLM_KDA_NOCOPY": "bool",
     "GLM_KDA_STASH": "bool",
     "GLM_ROUTER_FP32OUT": "bool",
+    "GLM_GATE_GEMV": "raw",
+    "GLM_ROUTER_GEMV": "raw",
+    "GLM_CERT_HEAD": "mode",            # glm_cert_head: GPUModelRunner.sample (eager, outside every graph)
+    "GLM_CERT_HEAD_MINTOK": "bool",     # glm_cert_head: certified path on min_tokens steps (eager, per call)
+    "GLM_DS_DRAFT_HEAD_FP4": "mode",    # glm_ds_draft_fp4: drafter compute_candidates (needs GLM_AB_DRAFT_SETS=1)
 }
 HASHED_SOURCES = ("glm_ab", "glm_target_argmax", "glm_kda_nocopy", "glm_kda_stash", "kda_stash",
-                  "glm_exact_hooks", "sitecustomize")
+                  "glm_exact_hooks", "glm_small_gemv", "sitecustomize", "glm_cert_head", "glm_ds_draft_fp4")
 CUDAGRAPH = "vllm.v1.worker.gpu.cudagraph_utils"
 WORKER = "vllm.v1.worker.gpu_worker"
 CORE = "vllm.v1.engine.core"
 _OFF = ("", "0", "off", "false", "no")
+# Host-side state that follows the runtime variant but lives outside every graph (e.g. glm_roce_proxy_pin's
+# thread placement): callables(variant) run on every rank right after a switch; a failing hook is logged, not fatal.
+SWITCH_HOOKS: list = []
 
 ACTIVE = False
 N = 1
@@ -92,6 +102,8 @@ def norm_value(key: str, value):
     raw = "" if value is None else str(value).strip().lower()
     if raw in _OFF:
         return "0"
+    if kind == "raw":  # adapter-defined value set, validated by the adapter
+        return raw
     if raw == "check":
         return "check"
     if raw in ("1", "on", "true"):
@@ -145,8 +157,8 @@ def configure(environ=None) -> bool:
     if n < 2:
         ACTIVE, N, _specs, _base = False, 1, [{}], {}
         return False
-    if n > 6:
-        raise RuntimeError(f"GLM_AB_VARIANTS={n}: at most 6 graph sets")
+    if n > 10:  # 2026-09-28 speed screen: 9 sets (5 sets x 15 shapes took 2.61 GiB of graph memory vs 2.57 release)
+        raise RuntimeError(f"GLM_AB_VARIANTS={n}: at most 10 graph sets")
     extra = sorted(k for k in environ if re.fullmatch(r"GLM_AB_V\d+", k) and int(k[8:]) >= n)
     if extra:
         raise RuntimeError(f"GLM_AB: {extra} set but GLM_AB_VARIANTS={n}")
@@ -399,9 +411,16 @@ def _argmax_stats() -> dict | None:
     return {"fast": st.fast, "full": st.full, "checked": st.checked, "mismatch": st.mismatch}
 
 
+def _gumbel_stats() -> dict | None:
+    """glm_gumbel_coupled counters (coupled verify steps; with =check, steps compared with the stock Sampler on the
+    same logits and the mismatches)."""
+    gc = sys.modules.get("glm_gumbel_coupled")
+    return None if gc is None else gc.stats()
+
+
 def status() -> dict:
     _, _, rank = _tp()
-    return {"rank": rank, "argmax": _argmax_stats(), "armed": ACTIVE, "variant": _runtime, "seq": _state["seq"], "token": _state["token"],
+    return {"rank": rank, "argmax": _argmax_stats(), "gumbel": _gumbel_stats(), "armed": ACTIVE, "variant": _runtime, "seq": _state["seq"], "token": _state["token"],
             "config": CONFIG_HASH, "variants": N, "replays": {k: list(v) for k, v in _state["replays"].items()},
             "sets": {_kind(m): len(m.__dict__.get("_glm_ab_sets") or [None]) for m in _state["managers"]},
             "effective": effective(_specs[_runtime], _base) if ACTIVE else None}
@@ -412,6 +431,11 @@ def worker_switch(variant, token="") -> dict:
         return {"error": "GLM_AB not armed (GLM_AB_VARIANTS < 2)"}
     prev = _runtime
     set_runtime(int(variant))
+    for fn in SWITCH_HOOKS:
+        try:
+            fn(_runtime)
+        except Exception as exc:  # noqa: BLE001
+            _log(f"switch hook {getattr(fn, '__qualname__', fn)} failed: {exc!r}")
     _state["seq"] += 1
     _state["token"] = token
     _state["last_switch"] = time.time()

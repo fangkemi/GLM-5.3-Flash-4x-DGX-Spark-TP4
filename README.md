@@ -7,60 +7,89 @@ endpoint with tool calling, reasoning and images, 262k context, up to 32 concurr
 - **Weights:** NVIDIA's NVFP4 routed experts, untouched. The dense layers that checkpoint leaves in BF16
   (attention, KDA, shared experts, dense MLP) are stored on 8-bit grids they already fit
   (MXFP8 / block FP8), so they read at half the bytes with 0.25 % output error.
-- **Decode:** DFlash2 speculative decoding with a batch-uniform adaptive draft length, Marlin W4A16 MoE,
-  FP8 KV cache, RoCEnante one-shot RDMA collectives on both ConnectX-7 rails, and a set of exact
-  kernel and scheduling fixes listed below.
+- **Decode:** DFlash2 speculative decoding. The target verifies a draft whose length is chosen per step from the
+  drafter's own confidence (on the GPU at one request), a certified argmax skips most of the LM head, and
+  sampling at T > 0 couples the draft to the target's noise so more of it is accepted. Marlin W4A16 MoE,
+  FP8 KV cache, RoCEnante one-shot RDMA collectives on both ConnectX-7 rails.
+- **Prefill:** sharded mHC, FlashKDA, Triton sparse MLA, dense 8-bit GEMMs on cuBLAS and fused routed-MoE
+  kernels: +42 % cold prefill at 32k-128k over the 2026-09-28 release before the routed-MoE kernels and the
+  gather route (+3-4 % more in their own A/B).
 
-## Results (2026-09-28, this commit, fresh clone)
+## Results (2026-09-29)
 
-sparkDash 1.8.8, 256 new tokens, temperature 0, thinking off, idle endpoint, same boot as the gates
-below. Two warm-up prose c1 runs discarded before each series.
+All numbers at the fleet's GPU clock cap of 2200 MHz. sparkDash 1.8.8: 256 new tokens, temperature 0, thinking
+off, idle endpoint, two warm-up prose c1 runs discarded; c1 is the median of 3 runs, c4 the median of 2, c16 one
+run. Prefill: sparkDash prefill bench, cold (salted), after a 4k warm-up, median of 2. RigMark 1.0.0 decode
+screen: code / prose / structured at effort low, median of 4 passes (not a conformant receipt).
 
-**Decode, aggregate tok/s (per stream in brackets)**
+Both columns come from one gate window (gate 0003, 2026-09-29 00:43-01:50), same boot order and benchmark code.
+The right column is this stack without the five additions marked "not in gate 0003" in the table below; the
+fresh-clone gate of this commit, with everything on, is in [docs/results/2026-09-29-release.md](docs/results/2026-09-29-release.md).
 
-| prompt type | c1 | c2 | c4 | c8 | c16 |
-|---|---:|---:|---:|---:|---:|
-| prose | **71.8** | 107.6 (54.1) | **156.9** (40.6) | 233.2 (30.2) | 329.2 (21.7) |
-| code | 114.8 | 159.7 (83.1) | 208.9 (56.5) | 297.3 (40.5) | 342.7 (24.5) |
-| structured | 158.4 | 259.3 (129.7) | 356.6 (92.2) | 645.9 (82.8) | 821.3 (53.5) |
-| JSON | 104.0 | 173.7 (86.8) | 260.2 (68.7) | 358.7 (48.7) | 504.0 (35.0) |
+**Decode, per-stream tok/s (aggregate in brackets)**
 
-Prose c1 is the median of three runs (73.1 / 69.3 / 71.8) and prose c4 the median of three
-(143.8 / 156.9 / 176.4); every other cell is one run. The gate series on the same boot half an hour
-earlier read prose c1 71.4 (74.3 / 71.4 / 62.9) and c4 151.0. Acceptance moves prose by 3-5 % run to
-run, and sparkDash uses different prompts at each concurrency, so per-stream values are not
-comparable across columns. The stable number is the decode step: `bench/accept_probe.py` at c1 gives
-prose 39.0 ms per step at 2.2-2.3 tokens per step, code 48.9 ms at 4.5-4.7, JSON 50.1 ms at 6.3 (two
-runs each, identical within 0.2 ms).
+| prompt type | 2026-09-28 release | 2026-09-29 stack, gate 0003 | change |
+|---|---:|---:|---:|
+| prose c1 | 72.3 | 83.8 | +16.0 % |
+| code c1 | 109.5 | 125.2 | +14.4 % |
+| JSON c1 | 99.7 | 114.8 | +15.1 % |
+| prose c4 | 42.0 (161.4) | 39.5 (154.2) | -6.0 % |
+| code c4 | 55.8 (211.5) | 56.9 (210.8) | +1.9 % |
+| JSON c4 | 65.6 (252.0) | 72.8 (281.0) | +11.0 % |
+| prose c16 (1 run) | 22.1 (335.6) | 21.7 (326.1) | -1.9 % |
 
-**Prefill, cold, tok/s by prompt length** (sparkDash prefill bench, one pass, same boot; 256k is
-258,073 tokens, the longest prompt that fits 262,144 with the reply)
+**Prefill, cold**
 
-| 4k | 16k | 32k | 64k | 128k | 256k |
-|---:|---:|---:|---:|---:|---:|
-| 2098 | 2243 | 2255 | 2264 | 2229 | 2150 |
+| prompt | 2026-09-28 release | 2026-09-29 stack, gate 0003 | change |
+|---|---:|---:|---:|
+| 32k tokens | 2150 tok/s, TTFT 15.3 s | 3053 tok/s, TTFT 10.7 s | +42.0 % |
+| 128k tokens | 2127 tok/s, TTFT 61.6 s | 3036 tok/s, TTFT 43.2 s | +42.7 % |
 
-Time to first token at 32k is 14.5 s, at 128k 58.8 s, at 256k 120 s. sparkDash's prefill filler is
-one repeated token (unique prefix per size, so the prefix cache does not apply); on varied random-word
-text `bench/prefill_checked.py` measured 2,202 / 2,209 / 2,197 tok/s at 16k / 32k / 64k on the
-2026-09-27 stack, within 2 % of these. Prefill is not optimised yet: in a prefill step MoE takes 35 %, attention
-16 %, all-reduce 13 % and mHC 11 %.
+**RigMark 1.0.0 decode screen, tok/s**
 
-- **Quality:** `bench/qeval.py` 75/75 (75 auto-scored checks: code run against hidden asserts, JSON
-  schema, numeric answers, format constraints, degeneration). KL divergence 0.0293 over 6618
-  teacher-forced positions against a BF16-attention reference (`bench/kld_probe.py`,
-  `bench/compare_kld_strict.py`).
-- **Boot:** ~2 min to `/health` 200 with warm JIT caches; 7.4 min on the first boot of a fresh clone (cold FlashInfer / Triton / TileLang caches).
+| workload | 2026-09-28 release | 2026-09-29 stack, gate 0003 | change |
+|---|---:|---:|---:|
+| code | 95.5 | 110.4 | +15.6 % |
+| prose | 51.7 | 57.6 | +11.4 % |
+| structured | 140.5 | 146.4 | +4.2 % |
 
-Earlier measurements: [measurement history](docs/history.md) (2026-09-26/27 L2 and GDN/router panels) and the
-[2026-09-18 first release](docs/history-2026-09-18.md) (prose c1 37 tok/s). These numbers include the 2026-09-27
-KDA speculative-block-boundary fix ([notes](docs/results/2026-09-27-kda-boundary-fix.md)).
+The full RigMark protocols on the same boot (effort low, 1.0.0 / 1.1.0): code 108.3 / 109.0, prose 58.7 / 57.7,
+structured 146.6 / 147.0 tok/s, prefill 8k / 32k / 64k cold 2802 / 3052 / 3058 tok/s, C4 aggregate 174.5 / 172.6 tok/s.
+
+- **Quality:** `bench/qeval.py` 75/75 (75 auto-scored checks: code run against hidden asserts, JSON schema,
+  numeric answers, format constraints, degeneration). KL divergence 0.0285 over 6618 teacher-forced positions against
+  a BF16-attention reference (`bench/kld_probe.py`, `bench/compare_kld_strict.py`), and 0.0098 over 98,500
+  positions of four 16.5k-40k-token prompts against the 2026-09-28 release (`bench/final_bench.py kldlong`), so
+  the prefill path is covered too. T > 0 scan (`bench/final_bench.py tscan`, 35 outputs at T 1.0 / 0.6 and mixed
+  batches): 0 garbled outputs.
+- **Boot:** 3.6 min to `/health` 200 with warm caches (gate 0003).
+
+Earlier measurements, including the 2026-09-28 release table measured without the clock cap:
+[measurement history](docs/history.md) and the [2026-09-18 first release](docs/history-2026-09-18.md).
 
 ## What is in the stack
 
-Each row was measured alone against the stack without it, in the same boot where possible
+Each row was measured against the stack without it, in the same boot where possible
 (`overlay/glm_ab.py` switches kernels between two CUDA-graph sets in one boot; a result is
 promoted only when its confidence interval clears zero and an identical-arm control does not).
+"Exact" means the output is bit-identical to the path it replaces; the others are judged by the KL gates above.
+
+**Added on 2026-09-29** (each is one switch in `profiles/current.env`)
+
+| Piece | Where | Effect | Credit |
+|---|---|---|---|
+| Draft-shape truncation | `GLM_DRAFT_TRUNC`, `overlay/glm_draft_trunc.py` | verifies only the draft prefix that pays for its rows; prose c1 +5.8 %, c4 +4.5 %; exact | ours |
+| Device-side verify-shape selection (not in gate 0003) | `DEVSELECT=1`, `overlay/glm_devselect.py` | at one request the GPU picks the verify length itself (one parent graph over the captured 2..8-row graphs), so the host no longer waits for the draft: step −0.45 ms, prose +1.9 %, RigMark T > 0 prose +3.9 %; buffer-identical to host truncation | ours |
+| Truncation cost refit for batch > 1 (not in gate 0003) | `TRUNC_COST=c4fit` | c4 prose +3.0 % (fleet A/B); c1 unchanged by construction | ours |
+| Gumbel-coupled drafting (T > 0) | `GLM_GUMBEL_COUPLED`, `overlay/glm_gumbel_coupled.py` | the drafter reuses the target's Gumbel noise: +3.2 % at T = 1; committed tokens equal plain sampling with the same seed | method: Jim Routh, llama.cpp-lab PR #26 |
+| Certified target head | `GLM_CERT_HEAD`, `overlay/glm_cert_head.py`, `cert_math.py` | an 8-bit screen of the LM head with a proven error bound picks the argmax; the full BF16 row is read only when the bound cannot decide; `min_tokens` requests too; exact | ours |
+| Decode kernel set | `GLM_GATE_GEMV`, `GLM_EARLY_PLAN`, `GLM_MARLIN_TUNE_ON`, `GLM_DENSE_FAST`, `GLM_L2_PREFETCH_MLA/_DRAFT`, `GLM_MHC_BF16W`, `GLM_DRAFT_CONV_FUSED`, `GLM_ROCE_PROXY_CPUS` | with the certified head: −1.25 ms per c1 step (gate GEMV, early plan, cert head), then −1.90 ms more for the rest together (in-boot A/B, 10 rounds) | Marlin (IST-DASLab, Neural Magic, vLLM); rest ours |
+| Prefill package | `GLM_PREFILL_SHARD(_PAD)`, `GLM_FLASHKDA_PREFILL`, `GLM_KDA_CONV_SPLIT`, `GLM_TRITON_MLA_PREFILL`, `GLM_DENSE_FAST_PREFILL` | cold prefill +28 % (4k) to +43 % (128k) | FlashKDA (MoonshotAI, MIT; Matt Mastracci's fp32-state branch); ideas: mmastrac (conv split, sparse MLA), Jacopo Nardiello and FujitsuPolycom (mHC sharding) |
+| Routed-MoE prefill kernels (not in gate 0003) | `PF3_ARM=samemath`, `overlay/glm_pf3_*.py` | MoE sum + shared add fused (exact, self-checked before it arms), smaller down tile, gate_up + SiLU in one kernel: prefill +3-4 % | vLLM MoE Marlin template; epilogue idea: mmastrac |
+| Large row gathers over NCCL (not in gate 0003) | `GATHER_ROUTE=1`, `overlay/glm_roce_gather_route.py` | the mHC prefill-shard row gathers (> 4 MiB per rank) take NCCL, −20 % per gather; exact | ours, on the RoCEnante shim |
+| Corrected L2 prefetch tables (not in gate 0003) | `L2PF_V2=1`, `overlay/glm_l2pf_v2.py` | the all-reduce L2 windows warm the BF16 mHC weights the kernel actually reads instead of the unused FP32 copy; c1 −0.29 ms (n.s.), tok/s c1 +0.45 %, c4 +2.6 % (in-boot A/B); exact | ours |
+
+**From the 2026-09-28 release**
 
 | Piece | Where | Effect | Credit |
 |---|---|---|---|
@@ -83,7 +112,8 @@ promoted only when its confidence interval clears zero and an identical-arm cont
 
 Tried and rejected, with numbers: confidence-based verify cut (prose −5 to −9 %), Marlin tile M=32
 (+1.2 ms), fused mHC kernels (not bit-exact), a CUDA graph for the DFlash context KV (+0.05 ms),
-W4A4 / MXFP4 experts for prefill (1.1-1.3x on MoE at 16-21 % MoE output error).
+W4A4 / MXFP4 experts for prefill (1.1-1.3x on MoE at 16-21 % MoE output error), a lower truncation
+row cost of 1.6 ms (not measured on the fleet; 2.0 is).
 
 ## Build
 
@@ -123,8 +153,12 @@ curl http://127.0.0.1:8093/v1/chat/completions -H 'Content-Type: application/jso
 
 `reasoning_effort` is `low`, `high` or `max`. Tool calls use the `glm47` parser, reasoning the `glm45` parser.
 
-Every switch is a line in `profiles/current.env`; removing a line turns that piece off. The
-`serve` step first checks that no existing container already uses the target name or overlay path.
+Every switch is a line in `profiles/current.env`; removing a line turns that piece off. The five newest pieces
+are knobs you can set on the command line, e.g. `DEVSELECT=0 PF3_ARM=off ./start.sh serve` (`DEVSELECT`,
+`TRUNC_COST`, `PF3_ARM`, `GATHER_ROUTE`, `L2PF_V2`; see the comments in the profile). The overlay's CUDA
+extensions (dense 8-bit kernels, FlashKDA, routed-MoE prefill kernels) are JIT-built on each node on first use and
+cached under the overlay directory; a first boot of a fresh tree takes longer. The `serve` step first checks that
+no existing container already uses the target name or overlay path.
 
 ## Benchmarks and gates
 
@@ -134,17 +168,18 @@ bench/kld_probe.py          teacher-forced top-20 logprobs from the live endpoin
 bench/accept_probe.py       step ms and accepted tokens per step at c1 (the stable speed number)
 bench/conc_bench.py         concurrency sweep with 32 distinct prompts per type
 bench/prefill_bench.py      cold prefill tok/s by prompt length
+bench/final_bench.py        long-prompt KL panel, T > 0 garble scan, sparkDash prefill, RigMark decode screen
 overlay/glm_ab.py, scripts/ab_inboot_glm.py   in-boot A/B of kernel switches with an A/A control
 ```
 
-`tests/` hold the unit tests; the CPU ones run inside the image
-(`docker exec ... python3 tests/<file>` with `PYTHONPATH=<overlay dir>` and `CUDA_VISIBLE_DEVICES=`),
-the `*_gpu.py` ones need a free GPU, so run them with the model stopped.
+`tests/run_cpu_tests.sh` runs every CPU test (28 suites; `GLM_IMAGE_SRC` points the source-drift checks at an
+extracted copy of the image's vLLM, or run it inside the image). The `*_gpu.py` tests need a free GPU, so run them
+with the model stopped.
 
 ## Known limits
 
-- Prefill is ~1.7x behind recipes that use W4A4 experts and a sparse-MLA prefill plugin; that is the next
-  piece of work, without giving up the weights above.
+- Prefill is still behind recipes that use W4A4 experts; this stack keeps the NVFP4 / 8-bit weights.
+- Device-side verify-shape selection works at one request only; batches use host truncation.
 - GLM greedy output is not bit-reproducible across runs on this stack (batch-dependent kernels), so
   exactness of a change is checked per kernel, not by comparing text.
 - The DFlash2 drafter is CC BY-NC-ND 4.0.
