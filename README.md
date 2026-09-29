@@ -22,9 +22,13 @@ off, idle endpoint, two warm-up prose c1 runs discarded; c1 is the median of 3 r
 run. Prefill: sparkDash prefill bench, cold (salted), after a 4k warm-up, median of 2. RigMark 1.0.0 decode
 screen: code / prose / structured at effort low, median of 4 passes (not a conformant receipt).
 
-Both columns come from one gate window (gate 0003, 2026-09-29 00:43-01:50), same boot order and benchmark code.
-The right column is this stack without the five additions marked "not in gate 0003" in the table below; the
-fresh-clone gate of this commit, with everything on, is in [docs/results/2026-09-29-release.md](docs/results/2026-09-29-release.md).
+Both columns of the tables come from one gate window (gate 0003, 2026-09-29 00:43-01:50), same boot order and
+benchmark code. The right column is this stack without the five additions marked "not in gate 0003" further down.
+
+**This release, fresh clone, everything on** (the gates and every number are in
+[docs/results/2026-09-29-release.md](docs/results/2026-09-29-release.md)): cold boot from a new tree 561 s with every
+piece armed on 4/4 ranks; sparkDash prose c1 80.3, code c1 126.3 (quick bench, median of 2 series); cold
+prefill 3015 / 3122 / 3165 tok/s at 8k / 32k / 128k (runs 2-3 after a restart); short-prompt TTFT 326 ms.
 
 **Decode, per-stream tok/s (aggregate in brackets)**
 
@@ -56,13 +60,14 @@ fresh-clone gate of this commit, with everything on, is in [docs/results/2026-09
 The full RigMark protocols on the same boot (effort low, 1.0.0 / 1.1.0): code 108.3 / 109.0, prose 58.7 / 57.7,
 structured 146.6 / 147.0 tok/s, prefill 8k / 32k / 64k cold 2802 / 3052 / 3058 tok/s, C4 aggregate 174.5 / 172.6 tok/s.
 
-- **Quality:** `bench/qeval.py` 75/75 (75 auto-scored checks: code run against hidden asserts, JSON schema,
-  numeric answers, format constraints, degeneration). KL divergence 0.0285 over 6618 teacher-forced positions against
-  a BF16-attention reference (`bench/kld_probe.py`, `bench/compare_kld_strict.py`), and 0.0098 over 98,500
-  positions of four 16.5k-40k-token prompts against the 2026-09-28 release (`bench/final_bench.py kldlong`), so
-  the prefill path is covered too. T > 0 scan (`bench/final_bench.py tscan`, 35 outputs at T 1.0 / 0.6 and mixed
-  batches): 0 garbled outputs.
-- **Boot:** 3.6 min to `/health` 200 with warm caches (gate 0003).
+- **Quality:** KL divergence 0.0285 over 6618 teacher-forced positions against a BF16-attention reference
+  (`bench/kld_probe.py`, `bench/compare_kld_strict.py`), and 0.0098 over 98,500 positions of four 16.5k-40k-token
+  prompts against the 2026-09-28 release (`bench/final_bench.py kldlong`), so the prefill path is covered too; these
+  two are the primary gates. `bench/qeval.py` (75 auto-scored checks) with the fixed number extractor: 75 and 74 on
+  this release; qeval moves by 2-3 points run to run on every stack here (the 2026-09-28-based stack read 73 / 75 / 72
+  in one boot), so it is run three times against a same-window reference, not as a single-run floor. T > 0 scan
+  (`bench/final_bench.py tscan`, 35 outputs at T 1.0 / 0.6 and mixed batches): 0 garbled outputs.
+- **Boot:** 3.6 min to `/health` 200 with warm caches, 9.4 min on the first boot of a fresh tree (every JIT cold).
 
 Earlier measurements, including the 2026-09-28 release table measured without the clock cap:
 [measurement history](docs/history.md) and the [2026-09-18 first release](docs/history-2026-09-18.md).
@@ -79,7 +84,7 @@ promoted only when its confidence interval clears zero and an identical-arm cont
 | Piece | Where | Effect | Credit |
 |---|---|---|---|
 | Draft-shape truncation | `GLM_DRAFT_TRUNC`, `overlay/glm_draft_trunc.py` | verifies only the draft prefix that pays for its rows; prose c1 +5.8 %, c4 +4.5 %; exact | ours |
-| Device-side verify-shape selection (not in gate 0003) | `DEVSELECT=1`, `overlay/glm_devselect.py` | at one request the GPU picks the verify length itself (one parent graph over the captured 2..8-row graphs), so the host no longer waits for the draft: step −0.45 ms, prose +1.9 %, RigMark T > 0 prose +3.9 %; buffer-identical to host truncation | ours |
+| Device-side verify-shape selection (not in gate 0003) | `DEVSELECT=1`, `overlay/glm_devselect.py` | at one request the GPU picks the verify length itself (one parent graph over the captured 2..8-row graphs), so the host no longer waits for the draft: step −0.45 ms, prose +1.9 %, RigMark T > 0 prose +3.9 %; buffer-identical to host truncation, and device and host share one λ, so both pick the same length | ours |
 | Truncation cost refit for batch > 1 (not in gate 0003) | `TRUNC_COST=c4fit` | c4 prose +3.0 % (fleet A/B); c1 unchanged by construction | ours |
 | Gumbel-coupled drafting (T > 0) | `GLM_GUMBEL_COUPLED`, `overlay/glm_gumbel_coupled.py` | the drafter reuses the target's Gumbel noise: +3.2 % at T = 1; committed tokens equal plain sampling with the same seed | method: Jim Routh, llama.cpp-lab PR #26 |
 | Certified target head | `GLM_CERT_HEAD`, `overlay/glm_cert_head.py`, `cert_math.py` | an 8-bit screen of the LM head with a proven error bound picks the argmax; the full BF16 row is read only when the bound cannot decide; `min_tokens` requests too; exact | ours |
@@ -113,7 +118,8 @@ promoted only when its confidence interval clears zero and an identical-arm cont
 Tried and rejected, with numbers: confidence-based verify cut (prose −5 to −9 %), Marlin tile M=32
 (+1.2 ms), fused mHC kernels (not bit-exact), a CUDA graph for the DFlash context KV (+0.05 ms),
 W4A4 / MXFP4 experts for prefill (1.1-1.3x on MoE at 16-21 % MoE output error), a lower truncation
-row cost of 1.6 ms (not measured on the fleet; 2.0 is).
+row cost of 1.6 ms (not measured on the fleet; 2.0 is), a 9216-row prefill chunk budget
+(`BATCHED_TOKENS=9223`: prefill −9 to −34 %).
 
 ## Build
 
