@@ -22,31 +22,66 @@ and gated by `bench/prefix_scan.py`. Existing installations need a coordinated r
 
 ## Current results
 
-2026-09-29 stack (`profiles/current.env`), GPU clock cap 2200 MHz. sparkDash 1.8.8: 256 new tokens, temperature 0,
-thinking off, idle endpoint, two warm-up prose c1 runs discarded; c1 is the median of 3 runs, c4 the median of 2,
-c16 one run. Prefill: sparkDash prefill bench, cold (salted), after a 4k warm-up, median of 2. RigMark 1.0.0 decode
-screen: code / prose / structured at effort low, median of 4 passes (not a conformant receipt). Decode and RigMark
-rows are from gate 0003 (2026-09-29 00:43-01:50); the release additions on top of it (device-side draft length,
-routed-MoE prefill kernels, gather route, L2 tables, c4 cost table, KDA checkpoint fix) were each measured in their own
-A/B and are listed in the table further down. Every gate and number: [docs/results/2026-09-29-release.md](docs/results/2026-09-29-release.md).
+Release 3edfbc9 (`profiles/current.env`), fresh clone, measured 2026-09-29 14:04-14:27 on four DGX Spark. Every
+table below comes from the same boot and the same benchmark code; only the GPU clock differs.
 
-**Decode, per-stream tok/s (aggregate in brackets)**
+### sparkDash, default GPU clocks (no cap)
 
-| prompt type | c1 | c4 | c16 |
-|---|---:|---:|---:|
-| prose | **83.8** | 39.5 (154.2) | 21.7 (326.1) |
-| code | 125.2 | 56.9 (210.8) | |
-| JSON | 114.8 | 72.8 (281.0) | |
+The driver's default boost, as most people run these boxes: SM clock under load median 2489 MHz (p90 2535).
 
-**Prefill, cold, tok/s** (fresh-clone release boot, runs 2-3 after a restart)
+**Decode, aggregate tok/s (per stream in brackets)**
 
-| 8k | 32k | 128k |
-|---:|---:|---:|
-| 3015 | 3122 | 3165 |
+| prompt type | c1 | c2 | c4 | c8 | c16 |
+|---|---:|---:|---:|---:|---:|
+| prose | **90.3** | 116.8 (58.9) | 169.5 (44.1) | 235.9 (30.8) | 331.5 (21.1) |
+| code | 124.0 | 149.8 (80.1) | 215.1 (57.7) | 276.3 (36.7) | 348.3 (22.5) |
+| structured | 168.8 | 270.2 (135.1) | 349.3 (95.5) | 463.5 (71.4) | 879.1 (55.0) |
+| json | 110.7 | 191.9 (97.4) | 280.0 (73.9) | 345.6 (46.4) | 431.2 (29.6) |
 
-**RigMark 1.0.0 decode screen, tok/s:** code 110.4, prose 57.6, structured 146.4. The full RigMark protocols
-(effort low, 1.0.0 / 1.1.0): code 108.3 / 109.0, prose 58.7 / 57.7, structured 146.6 / 147.0 tok/s, C4 aggregate
-174.5 / 172.6 tok/s. Short-prompt TTFT 326 ms.
+**Prefill, cold, tok/s**
+
+| 4k | 16k | 32k | 64k | 128k |
+|---:|---:|---:|---:|---:|
+| 2768 | 3426 | 3470 | 3510 | 3462 |
+
+### sparkDash, GPU clock capped at 2200 MHz
+
+The cap this fleet runs with (`spark-clock-cap` service): it keeps the GPUs about 13 °C cooler (hottest GPU 72 °C
+against 85 °C uncapped) for a small speed cost, mostly in prefill. SM clock under load median 2177 MHz.
+
+**Decode, aggregate tok/s (per stream in brackets)**
+
+| prompt type | c1 | c2 | c4 | c8 | c16 |
+|---|---:|---:|---:|---:|---:|
+| prose | **85.0** | 126.6 (63.3) | 173.9 (44.6) | 231.1 (30.1) | 339.6 (22.6) |
+| code | 119.8 | 170.8 (88.8) | 208.9 (56.9) | 267.5 (37.5) | 324.0 (22.0) |
+| structured | 170.3 | 270.5 (135.3) | 367.0 (97.4) | 647.0 (80.9) | 722.3 (47.2) |
+| json | 127.0 | 176.9 (90.5) | 244.7 (64.8) | 344.5 (46.7) | 440.3 (29.6) |
+
+**Prefill, cold, tok/s**
+
+| 4k | 16k | 32k | 64k | 128k |
+|---:|---:|---:|---:|---:|
+| 2563 | 3222 | 3330 | 3369 | 3322 |
+
+### RigMark 1.0.0 decode screen, tok/s
+
+| workload | default clocks | 2200 MHz cap |
+|---|---:|---:|
+| code | 113.8 | 111.5 |
+| prose | 62.1 | 60.6 |
+| structured | 153.2 | 154.6 |
+
+**How these were measured.** sparkDash 1.8.8 DecodeBench: 256 new tokens, temperature 0, thinking off, idle
+endpoint, two warm-up prose c1 runs discarded; c1 is the median of 3 runs (prose c1 at 2200 MHz: median of 6, three
+in the sweep 87.1 / 76.7 / 75.9 and three in a recheck 84.7 / 87.0 / 85.3), c4 the median of 2, c2 / c8 / c16 one
+run; every run checked for 256 tokens per stream and no reasoning output. Greedy output is not bit-reproducible run to
+run on this stack, so prose c1 moves by several tok/s between runs (one prompt; the tokens per step follow how much
+of the draft is accepted), and single-run cells differ by more than the gap between the two clocks; prefill (+4-8 %)
+and RigMark code / prose (+2 %) are the clock differences above noise. Prefill: sparkDash prefill bench, cold
+(salted prompts), after a 4k warm-up, median of runs 2-3. RigMark: decode only, effort low, median of 4 passes (not a
+conformant receipt). Raw output and the per-node clock and temperature samples:
+[docs/results/2026-09-29-clocks.md](docs/results/2026-09-29-clocks.md).
 
 - **Quality:** KL divergence 0.0285 over 6618 teacher-forced positions against a BF16-attention reference
   (`bench/kld_probe.py`, `bench/compare_kld_strict.py`), and 0.0098 over 98,500 positions of four 16.5k-40k-token
