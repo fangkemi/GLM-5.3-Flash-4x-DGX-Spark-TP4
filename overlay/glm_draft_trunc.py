@@ -287,6 +287,18 @@ def eligible(scheduler_output, rids) -> int | None:
     return ks.pop() if len(ks) == 1 else None
 
 
+def _choose(policy: Policy, confs, kmax: int) -> int:
+    """Policy.choose; a c1 decision shares its lam with glm_devselect's device lam (parity fix 2026-09-29)."""
+    ds = sys.modules.get("glm_devselect")
+    sync = ds is not None and len(confs) == 1 and hasattr(ds, "lam_pull")
+    if sync:
+        ds.lam_pull(policy)
+    L = policy.choose(confs, kmax)
+    if sync:
+        ds.lam_push(policy)
+    return L
+
+
 def truncate(scheduler_output, confs_by_req: dict, policy: Policy):
     """Pure host step (tested on CPU): -> chosen L or None (untouched)."""
     spec = scheduler_output.scheduled_spec_decode_tokens
@@ -299,7 +311,7 @@ def truncate(scheduler_output, confs_by_req: dict, policy: Policy):
     if len(ks) != 1:
         return None                                  # mixed scheduled k: keep the scheduler's shape
     kmax = ks.pop()
-    L = policy.choose([confs_by_req[r] for r in rids], kmax)
+    L = _choose(policy, [confs_by_req[r] for r in rids], kmax)
     if L >= kmax:
         return L
     cut = 0
@@ -349,7 +361,7 @@ def _patch_runner(mod) -> None:
             _W.unscored = None
             ev.synchronize()
             arr = _W.ring[slot][:n].tolist()
-            L = pol.choose([arr[i] for i in idx], kmax)       # the live requests, in truncate()'s order
+            L = _choose(pol, [arr[i] for i in idx], kmax)     # the live requests, in truncate()'s order
             _W.last = (L, pol.last_margin, kmax)
             st["posthoc"] += 1
         pend, _W.pend = _W.pend, None

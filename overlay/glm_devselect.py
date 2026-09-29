@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-"""GLM_DEVSELECT: device-side verify-shape selection for GLM_DRAFT_TRUNC Default OFF.
+"""GLM_DEVSELECT: device-side verify-shape selection for GLM_DRAFT_TRUNC. Default OFF.
 
 c1 only (one request, 7 scheduled drafts). The host prepares the ordinary 8-row verify step during the draft and replays
 one PARENT graph instead of the 8-row target graph. The parent holds:
@@ -250,7 +250,7 @@ def _select(sh, st):
 
 
 def _targets(runner):
-    """Every buffer a body patches (DEVSELECT.md 3.2)."""
+    """Every buffer a body patches."""
     import torch
     sm = sys.modules[SM90]
     state = sm._SM90_STATE
@@ -602,7 +602,9 @@ def build(runner) -> None:
                     _add_child_to_capture(graphs[descs[M]].raw_cuda_graph())
                     parent.end_capture_to_conditional_node()
             _D.sets[id(graphs)] = dict(parent=parent, st=st, set_index=i, launched=0,
-                                       done=torch.cuda.Event())
+                                       done=torch.cuda.Event(),
+                                       lam_pin=torch.zeros(1, dtype=torch.float64, pin_memory=True),
+                                       lam_ev=torch.cuda.Event(), dirty=False)
             _log(f"set {i}: parent built + instantiated in {(time.perf_counter() - t0) * 1e3:.0f} ms "
                  f"(7 IF bodies, child graphs of M={MS})")
     _D.shared, _D.stage, _D.targets, _D.runner = sh, S, T, runner
@@ -931,6 +933,7 @@ def run_parent(mgr, desc) -> bool:
         _log(f"LIVE step {_D.steps + 1}: stage ok{' + G1 done' if dbg else ''}; replay start")
     ent["parent"].replay()
     ent["done"].record()
+    _lam_publish(ent)
     t3 = time.perf_counter()
     ab = sys.modules.get("glm_ab")
     if ab is not None and getattr(ab, "ACTIVE", False):   # the parent replays the runtime set's target graphs
@@ -956,6 +959,46 @@ def run_parent(mgr, desc) -> bool:
     return True
 
 
+# ================================================================================= one lam per (set = variant)
+# Parity fix (devselect-parity, 2026-09-29): the device lam of a graph set and the host Policy.lam[1] of the same
+# glm_ab variant are ONE state. Device steps publish their lam (8 B D2H into pinned memory, stream-ordered after the
+# parent); the next host c1 decision adopts it (its draft event is later on the same stream, so the copy is done);
+# every host c1 decision writes its updated lam back to the device (fill_, ordered before the next parent).
+# Both sides run the identical fp64 update, so the L sequence equals host trunc v3 driven by one shared lam.
+_LSYNC = {"pull": 0, "push": 0}      # host c1 decisions that adopted / wrote back the device lam
+
+
+def _lam_publish(ent) -> None:
+    ent["lam_pin"].copy_(ent["st"]["lam"].view(1), non_blocking=True)
+    ent["lam_ev"].record()
+    ent["dirty"] = True
+
+
+def cur_set():
+    r = _D.runner
+    if not _D.built or r is None:
+        return None
+    return _D.sets.get(id(r.cudagraph_manager.graphs))
+
+
+def lam_pull(pol) -> None:
+    """Before a host c1 choose: adopt the current set's device lam if its parent ran since the last sync."""
+    ent = cur_set()
+    if ent is not None and ent.get("dirty"):
+        ent["lam_ev"].synchronize()
+        pol.lam[1] = float(ent["lam_pin"][0])
+        ent["dirty"] = False
+        _LSYNC["pull"] += 1
+
+
+def lam_push(pol) -> None:
+    """After a host c1 choose: the current set's device lam takes the host value (before the next parent)."""
+    ent = cur_set()
+    if ent is not None and 1 in pol.lam:
+        ent["st"]["lam"].fill_(pol.lam[1])
+        _LSYNC["push"] += 1
+
+
 def _med(v):
     v = sorted(v)
     return v[len(v) // 2] if v else float("nan")
@@ -975,7 +1018,8 @@ def _status() -> None:
         parts.append(f"set{ent['set_index']} launched {ent['launched']} L hist {h[1:K]} lam "
                      f"{float(ent['st']['lam']):.4f}")
     _log(f"steps {_D.steps}: {'; '.join(parts)}; host stage ms median {_med(_D.t_stage):.3f} "
-         f"parent launch ms median {_med(_D.t_launch):.3f}; fallbacks {_D.fallbacks}")
+         f"parent launch ms median {_med(_D.t_launch):.3f}; fallbacks {_D.fallbacks}; lam sync pull {_LSYNC['pull']} "
+         f"push {_LSYNC['push']}")
     _D.t_stage, _D.t_launch = [], []
 
 

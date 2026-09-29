@@ -97,7 +97,18 @@ The producer uses the historical model alias `GLM-5.3-Flash-FP8`. Do not use
 with selective retries. Retain all task outputs, score and truncation counts.
 
 Require qeval >=72/75 at c1 and c4, teacher-forced KLD around 0.03, and retained
-long-context sanity evidence. KLD must contain all 17 expected calibration items
+long-context sanity evidence.
+
+Since 2026-09-29 the release rule is: the long-prompt KL panel (`bench/final_bench.py kldlong`, four 16.5k-40k-token
+prompts, <= 0.035 and on the A/A floor of about 0.009-0.010 against the previous release) and the 6618-position
+teacher-forced KLD are the primary quality gates; qeval is run three times with the fixed number extractor and
+compared with a reference stack measured in the same window, never against a fixed single-run floor. qeval is
+noisy at temperature 0 on this stack: greedy output is not reproducible in a boot, and the previous release scored
+73 / 75 / 72 in three consecutive runs of one boot. Before 2026-09-29 `extract_final_number` took the last number in
+the reply, so a correct answer followed by a restatement ("... 3 ... so 9 minus 6 is 3" style) could be scored as
+wrong; it now prefers the last line that holds only a number, which is the form the prompts ask for. Rescoring 360
+repeated runs of the flaky tasks moved reason_r12, reason_r4 and math_m4 to zero misses; the remaining misses
+(math_m3, math_m9, json_count) occur at the same rate on the 2026-09-28-based stack and this release. KLD must contain all 17 expected calibration items
 and 6618 teacher-forced positions with matching per-item lengths and prompt
 identity; greedy text equality or a truncated zip is not a substitute. The
 reported top-20 folded-tail estimate is not full-vocabulary KL divergence.
@@ -139,7 +150,7 @@ the same complete prompts. `STRUCTURAL_PASS` is not a numerical quality gate.
 No KLD value is claimed here for an operator-supplied panel.
 
 Bundled source SHA256: qeval `a83ccf00919153cae3acfaee49390be57d2f447b30e12ba4b4cbb9ac364a694e`,
-qeval tasks `9072efdda46856028189c8f21a7c83f09ef75fba7e70da8c93d5781493a3bb9e`,
+qeval tasks `54719522d26996198c870264dfe5a93e2dd23f33436626c2477f1ac71206ffd2` (fixed extractor, 2026-09-29),
 KLD probe `75a2adbb16500fbafe86b01c19680ab64e9282522490e608fdc34559a7a5005e`.
 
 For a new optimization, first use one-boot balanced A/B plus a duplicate baseline
