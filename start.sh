@@ -68,6 +68,10 @@ run_rank() {
     -v $OVERLAY_REMOTE/overlay/gumbel.py:$VLLM_PKG/v1/worker/gpu/sample/gumbel.py:ro \
     -v $OVERLAY_REMOTE/overlay/rejection_sampler_utils.py:$VLLM_PKG/v1/worker/gpu/spec_decode/rejection_sampler_utils.py:ro"
   local load=""; [[ -n "${LOAD_FORMAT:-}" ]] && load="--load-format $LOAD_FORMAT"
+  local draft_mount="" spec_arg=""; if [[ ${SPEC_DISABLE:-0} != 1 ]]; then
+    draft_mount="-v $DRAFT_DIR:/draft:ro"
+    spec_arg="--speculative-config '$(spec_json)'"
+  fi
   # FI_CACHE_PERSIST (default 1; diagnostics/glm-inboot): FlashInfer keeps its JIT builds under $HOME/.cache/flashinfer,
   # i.e. /root inside the container (XDG_CACHE_HOME is not read), so every boot rebuilt three modules with nvcc: top-k
   # in profile_run (~92 s), batch MLA at capture (~7 s), sampling in the warm-up (~38 s). FLASHINFER_WORKSPACE_BASE
@@ -79,7 +83,7 @@ run_rank() {
   rssh "$h" "docker run -d --restart no --name ${CTN}-r$r --gpus all --network host --ipc host \
     --device /dev/infiniband --cap-add IPC_LOCK --ulimit memlock=-1 --ulimit stack=67108864 --ulimit nofile=1048576:1048576 \
     --memory ${CTN_MEM:-112g} --memory-swap ${CTN_MEM:-112g} --entrypoint vllm \
-    -v $MODEL_DIR:/model:ro -v $DRAFT_DIR:/draft:ro -v $OVERLAY_REMOTE:/overlay:ro -v $OVERLAY_REMOTE/cache:/cache $nccl_mount $patch_mount $xenv $xfi \
+    -v $MODEL_DIR:/model:ro $draft_mount -v $OVERLAY_REMOTE:/overlay:ro -v $OVERLAY_REMOTE/cache:/cache $nccl_mount $patch_mount $xenv $xfi \
     -v $OVERLAY_REMOTE/overlay/sparse_attn_indexer_kpool.py:$VLLM_PKG/model_executor/layers/sparse_attn_indexer_kpool.py:ro \
     -v $OVERLAY_REMOTE/overlay/glm47_moe.py:$VLLM_PKG/parser/glm47_moe.py:ro \
     -v $OVERLAY_REMOTE/overlay/abstract_parser.py:$VLLM_PKG/parser/abstract_parser.py:ro \
@@ -95,13 +99,13 @@ run_rank() {
     $(transport_args) \
     $IMAGE serve /model --served-model-name $SERVED_NAME --dtype bfloat16 \
     --tensor-parallel-size 4 --nnodes 4 --node-rank $r --master-addr ${IPS[0]} --master-port ${MASTER_PORT:-29669} --distributed-executor-backend mp \
-    --max-model-len $MAX_MODEL_LEN --kv-cache-dtype fp8_e4m3 --kv-cache-memory-bytes $KV_BYTES --gpu-memory-utilization ${GPU_UTIL:-0.85} \
+    --max-model-len $MAX_MODEL_LEN --kv-cache-dtype ${KV_DTYPE:-fp8_e4m3} --kv-cache-memory-bytes $KV_BYTES --gpu-memory-utilization ${GPU_UTIL:-0.85} \
     --max-num-seqs $MAX_SEQS --max-num-batched-tokens ${BATCHED_TOKENS:-4096} --block-size 2304 --moe-backend $MOE_BACKEND \
     --enable-prefix-caching --enable-chunked-prefill --no-enable-flashinfer-autotune \
     --enable-auto-tool-choice --tool-call-parser glm47 --reasoning-parser glm45 --chat-template /model/chat_template.jinja \
     --default-chat-template-kwargs '{\"reasoning_effort\":\"${DEFAULT_EFFORT:-high}\"}' \
     --host ${HOST_BIND:-127.0.0.1} --port ${PORT:-8093} --disable-custom-all-reduce \
-    --speculative-config '$(spec_json)' $sched \
+    $spec_arg $sched \
     --compilation-config '{\"mode\": 0, \"cudagraph_mode\": \"FULL_DECODE_ONLY\", \"cudagraph_capture_sizes\": ${CAPTURE_SIZES}, \"max_cudagraph_capture_size\": ${CAPTURE_MAX}}' \
     --limit-mm-per-prompt '{\"image\":${MM_IMAGES:-16},\"video\":0}' --mm-processor-cache-gb ${MM_CACHE_GB:-4} --mm-processor-kwargs '{\"max_pixels\":6422528,\"max_image_tokens\":4096}' $load ${EXTRA_ARGS:-} $extra"
   if [[ ${PREWARM:-1} == 1 ]]; then

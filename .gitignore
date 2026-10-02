@@ -1,4 +1,7 @@
 .env
+.env.dealign-ring
+.env.fp8-ring
+.env.zai-ring
 cache/
 logs/
 runs/
