@@ -1,0 +1,4 @@
+interface:
+  display_name: "GLM-5.3 Spark Deployment"
+  short_description: "Deploy and validate GLM FP8 on a four-node Spark ring"
+  default_prompt: "Use $glm53-spark-deploy to deploy or restart the FP8 service on my four DGX Spark nodes and verify inference."

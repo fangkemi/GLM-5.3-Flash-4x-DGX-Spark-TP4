@@ -28,6 +28,15 @@ See the [comparison and validation](docs/results/2026-10-02-fp8-tuning.md) and
 `.env.fp8.dflash.switchless.example`. These measurements use the FP8 ring deployment;
 the NVFP4 switched results below describe a different configuration.
 
+## Repository deployment skill
+
+[GLM-5.3 Spark deployment skill](.agents/skills/glm53-spark-deploy/SKILL.md)
+is included under `.agents/skills`. Invoke `$glm53-spark-deploy` from this
+checkout to deploy, restart, stop or validate the FP8 switchless service. It
+uses the live profile, preserves old runtimes and verifies inference after
+startup. The skill includes the current single-request recipe and links to
+its measured limits.
+
 ## Current results
 
 Release 3edfbc9 (`profiles/current.env`), fresh clone, measured 2026-09-29 14:04-14:27 on four DGX Spark. Every
