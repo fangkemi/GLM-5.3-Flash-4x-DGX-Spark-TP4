@@ -171,6 +171,9 @@ row cost of 1.6 ms (not measured on the fleet; 2.0 is), a 9216-row prefill chunk
 
 For a GLM-5.3-Flash FP8 target without a DFlash drafter, see
 [the FP8 deployment guide](docs/fp8-deployment.md) and `.env.fp8.switchless.example`.
+For the tested FP8 target with DFlash2 enabled, use
+`.env.fp8.dflash.switchless.example`; the same guide records draft preparation,
+the three-token configuration, measured speed and memory limits.
 
 ```bash
 cp .env.example .env            # hosts, fabric, image and weight paths; sources profiles/current.env

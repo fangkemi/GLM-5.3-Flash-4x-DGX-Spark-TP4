@@ -71,3 +71,72 @@ and logs rather than relying solely on Docker stats or `nvidia-smi` memory field
 An upstream HTTP 400 stating “At most 4 image(s)” was resolved by changing
 `MM_IMAGES` from 4 to 32 and restarting. This limit includes images retained in
 conversation history, even when a proxy reports the upstream error.
+
+## Enable DFlash2 for the FP8 target
+
+The verified DFlash configuration is in `.env.fp8.dflash.switchless.example`.
+It uses the original BF16 `incoai/GLM-5.3-Flash-DFlash2` drafter, with no draft
+re-quantization. The target remains the dealignai FP8 checkpoint.
+
+Download the draft on the head, then synchronize it to every node over verified
+ConnectX routes. For example, with Hugging Face CLI:
+
+```sh
+hf download incoai/GLM-5.3-Flash-DFlash2 \
+  --revision bf582e4eacc1810f76656d1811693ff6c6737d2a \
+  --local-dir /home/kemi/models/incoai/GLM-5.3-Flash-DFlash2
+```
+
+If direct connectivity fails, configure your HTTP(S) proxy for the download.
+The local fleet also has `/home/kemi/models/hfd.sh`; inspect its options before
+using it. The verified `model.safetensors` SHA256 on all four nodes was
+`b038e1d9d1e7833fa3880c2c0135ba9b673013f03da1b29fb831931584759dac`.
+See the [draft model card](https://huggingface.co/incoai/GLM-5.3-Flash-DFlash2)
+for its base target and license. This drafter was trained for the official target;
+acceptance and speed on a modified checkpoint must be measured.
+
+Stop the previous instance using its old profile, then copy/edit the DFlash
+example with fresh runtime names and start it in tmux as above. Key settings:
+
+```sh
+SPEC_DISABLE=0
+DRAFT_DIR=/home/kemi/models/incoai/GLM-5.3-Flash-DFlash2
+K_HI=3
+K_LO=3
+SPEC_TABLE='[[1,3,3]]'
+SCHEDULER_CLS=none
+CAPTURE_SIZES='[1,2,4,8,12,16,32]'
+```
+
+This uses a fixed three-token draft for one to three active sequences. Capture
+sizes include 4, 8 and 12 verification tokens. Keep `GLM5NEXT_PATCH=0` for this
+target; importing the full NVFP4 profile would change incompatible precision
+settings. To disable DFlash, stop the instance and redeploy with fresh names and
+`SPEC_DISABLE=1` using the non-speculative example.
+
+### Observed results (2026-10-02)
+
+Four containers ran without OOM and `/health` returned 200. Three concurrent
+short arithmetic requests returned correct answers. With the same 17 GiB KV
+allocation per rank, DFlash reported **1,478,427 shared KV tokens**, compared with
+1,535,656 without speculation. Context remained 1,048,576, concurrency 3 and the
+image limit 32. Draft weights, recurrent state and runtime workspace add memory
+overhead; the non-speculative token capacity cannot be assumed to carry over.
+
+One temperature-zero hash-table explanation prompt with a 192-token output cap
+gave these measurements:
+
+| Mode | Total elapsed | First token | Decode rate |
+| --- | --- | --- | --- |
+| No draft | 8.406 s | 0.454 s | ~24 tokens/s |
+| DFlash, first test request | 6.427 s | 1.702 s | ~40 tokens/s |
+| DFlash, warmed repeat | 4.999 s | 0.361 s | ~41 tokens/s |
+
+Over the first two DFlash requests, metrics counted 247 accepted tokens out of
+423 drafted tokens (~58%). The warmed total time was ~1.68x faster on this short
+workload. These are limited measurements, not a general speedup guarantee:
+the repeated prompt may benefit from prefix caching, and there were no full 1M,
+long-prompt, high-resolution multi-image or sustained concurrency stress tests.
+Generated text differed between the greedy modes, so bitwise output equivalence
+was not established. Check `vllm:spec_decode_*` metrics and representative output
+quality when evaluating other workloads.
