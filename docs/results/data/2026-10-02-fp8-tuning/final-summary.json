@@ -1,0 +1,32 @@
+{
+  "stage": "final",
+  "base": "http://HEAD:8888",
+  "rounds": 3,
+  "concurrency": 1,
+  "quality_passed": 9,
+  "quality_total": 11,
+  "semantic_passed": 11,
+  "summary": {
+    "prose": {
+      "decode_tps": 35.88074857774422,
+      "ttft_s": 0.32906798600004095,
+      "aggregate_tps": 34.40303712634983,
+      "acceptance": 0.4582043343653251
+    },
+    "code": {
+      "decode_tps": 51.70806015404979,
+      "ttft_s": 0.3843520309999917,
+      "aggregate_tps": 48.09439685660436,
+      "acceptance": 0.8589147286821706
+    },
+    "json": {
+      "decode_tps": 45.756378063092285,
+      "ttft_s": 0.2645917920000329,
+      "aggregate_tps": 43.37882718956865,
+      "acceptance": 0.692
+    }
+  },
+  "median_decode_tps": 45.756378063092285,
+  "foreign_rows": 0,
+  "time": 1790946917.9639099
+}

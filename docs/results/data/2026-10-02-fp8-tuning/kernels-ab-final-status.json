@@ -1,0 +1,406 @@
+[
+  {
+    "rank": 0,
+    "argmax": null,
+    "gumbel": null,
+    "armed": true,
+    "variant": 0,
+    "seq": 36,
+    "token": "89214-551008690981",
+    "kernel_checks": {
+      "conv": {
+        "mode": "off",
+        "installed": [
+          "cudagraph",
+          "model"
+        ],
+        "qualified_keys": 3,
+        "bad_keys": 0,
+        "counts": {
+          "qualified": 3,
+          "fused_calls": 240
+        },
+        "replays": 7311,
+        "device_counters": null,
+        "draft_graph_ms_median_by_variant": null
+      },
+      "router": {
+        "skipped": 2688,
+        "kept": 0,
+        "checked": 2436,
+        "violations": 0,
+        "logged": false
+      }
+    },
+    "config": "015b8ddd8644e340",
+    "variants": 5,
+    "replays": {
+      "DFlashCudaGraphManager": [
+        1482,
+        1454,
+        1468,
+        1443,
+        1464,
+        0
+      ],
+      "target": [
+        1449,
+        1428,
+        1442,
+        1417,
+        1438,
+        0
+      ]
+    },
+    "sets": {
+      "target": 5,
+      "DFlashCudaGraphManager": 5
+    },
+    "effective": {
+      "GLM_CERT_HEAD": "0",
+      "GLM_CERT_HEAD_MINTOK": false,
+      "GLM_DENSE_FAST": "0",
+      "GLM_DENSE_FAST_PREFILL": "0",
+      "GLM_DEVSELECT": "0",
+      "GLM_DFLASH_CTX_GRAPH": false,
+      "GLM_DRAFT_CONV_FUSED": "0",
+      "GLM_DRAFT_TRUNC": "0",
+      "GLM_DS_DRAFT_HEAD_FP4": "0",
+      "GLM_EARLY_PLAN": false,
+      "GLM_FLASHKDA_PREFILL": false,
+      "GLM_GATE_GEMV": "0",
+      "GLM_GUMBEL_COUPLED": "0",
+      "GLM_KDA_CONV_SPLIT": false,
+      "GLM_KDA_FLAG_FUSED": false,
+      "GLM_KDA_NOCOPY": false,
+      "GLM_KDA_STASH": false,
+      "GLM_KDA_STASH_NOCOPY": false,
+      "GLM_L2_PREFETCH": false,
+      "GLM_L2_PREFETCH_AR": false,
+      "GLM_L2_PREFETCH_DRAFT": false,
+      "GLM_L2_PREFETCH_DRAFT_MB": "0",
+      "GLM_L2_PREFETCH_MLA": false,
+      "GLM_L2_PREFETCH_MLA_AR": false,
+      "GLM_L2_PREFETCH_MLA_MB": "0",
+      "GLM_L2_PREFETCH_MOE": false,
+      "GLM_MARLIN_TUNE_ON": false,
+      "GLM_MHC_BF16W": false,
+      "GLM_MHC_FUSED": false,
+      "GLM_PF3_ACT": false,
+      "GLM_PF3_DOWN": false,
+      "GLM_PF3_SUMADD": false,
+      "GLM_PREFILL_SHARD": "0",
+      "GLM_PREFILL_SHARD_PAD": false,
+      "GLM_ROCE_AG_DIM0_NCCL": false,
+      "GLM_ROCE_PROXY_CPUS": "0",
+      "GLM_ROUTER_DEDUP": false,
+      "GLM_ROUTER_FP32OUT": false,
+      "GLM_ROUTER_GEMV": "0",
+      "GLM_TARGET_VOCAB_ARGMAX": "0",
+      "GLM_TRITON_MLA_PREFILL": false
+    }
+  },
+  {
+    "rank": 1,
+    "argmax": null,
+    "gumbel": null,
+    "armed": true,
+    "variant": 0,
+    "seq": 36,
+    "token": "89214-551008690981",
+    "kernel_checks": {
+      "conv": {
+        "mode": "off",
+        "installed": [
+          "cudagraph",
+          "model"
+        ],
+        "qualified_keys": 3,
+        "bad_keys": 0,
+        "counts": {
+          "qualified": 3,
+          "fused_calls": 240
+        },
+        "replays": 7311,
+        "device_counters": null,
+        "draft_graph_ms_median_by_variant": null
+      },
+      "router": {
+        "skipped": 2688,
+        "kept": 0,
+        "checked": 2436,
+        "violations": 0,
+        "logged": false
+      }
+    },
+    "config": "015b8ddd8644e340",
+    "variants": 5,
+    "replays": {
+      "DFlashCudaGraphManager": [
+        1482,
+        1454,
+        1468,
+        1443,
+        1464,
+        0
+      ],
+      "target": [
+        1449,
+        1428,
+        1442,
+        1417,
+        1438,
+        0
+      ]
+    },
+    "sets": {
+      "target": 5,
+      "DFlashCudaGraphManager": 5
+    },
+    "effective": {
+      "GLM_CERT_HEAD": "0",
+      "GLM_CERT_HEAD_MINTOK": false,
+      "GLM_DENSE_FAST": "0",
+      "GLM_DENSE_FAST_PREFILL": "0",
+      "GLM_DEVSELECT": "0",
+      "GLM_DFLASH_CTX_GRAPH": false,
+      "GLM_DRAFT_CONV_FUSED": "0",
+      "GLM_DRAFT_TRUNC": "0",
+      "GLM_DS_DRAFT_HEAD_FP4": "0",
+      "GLM_EARLY_PLAN": false,
+      "GLM_FLASHKDA_PREFILL": false,
+      "GLM_GATE_GEMV": "0",
+      "GLM_GUMBEL_COUPLED": "0",
+      "GLM_KDA_CONV_SPLIT": false,
+      "GLM_KDA_FLAG_FUSED": false,
+      "GLM_KDA_NOCOPY": false,
+      "GLM_KDA_STASH": false,
+      "GLM_KDA_STASH_NOCOPY": false,
+      "GLM_L2_PREFETCH": false,
+      "GLM_L2_PREFETCH_AR": false,
+      "GLM_L2_PREFETCH_DRAFT": false,
+      "GLM_L2_PREFETCH_DRAFT_MB": "0",
+      "GLM_L2_PREFETCH_MLA": false,
+      "GLM_L2_PREFETCH_MLA_AR": false,
+      "GLM_L2_PREFETCH_MLA_MB": "0",
+      "GLM_L2_PREFETCH_MOE": false,
+      "GLM_MARLIN_TUNE_ON": false,
+      "GLM_MHC_BF16W": false,
+      "GLM_MHC_FUSED": false,
+      "GLM_PF3_ACT": false,
+      "GLM_PF3_DOWN": false,
+      "GLM_PF3_SUMADD": false,
+      "GLM_PREFILL_SHARD": "0",
+      "GLM_PREFILL_SHARD_PAD": false,
+      "GLM_ROCE_AG_DIM0_NCCL": false,
+      "GLM_ROCE_PROXY_CPUS": "0",
+      "GLM_ROUTER_DEDUP": false,
+      "GLM_ROUTER_FP32OUT": false,
+      "GLM_ROUTER_GEMV": "0",
+      "GLM_TARGET_VOCAB_ARGMAX": "0",
+      "GLM_TRITON_MLA_PREFILL": false
+    }
+  },
+  {
+    "rank": 2,
+    "argmax": null,
+    "gumbel": null,
+    "armed": true,
+    "variant": 0,
+    "seq": 36,
+    "token": "89214-551008690981",
+    "kernel_checks": {
+      "conv": {
+        "mode": "off",
+        "installed": [
+          "cudagraph",
+          "model"
+        ],
+        "qualified_keys": 3,
+        "bad_keys": 0,
+        "counts": {
+          "qualified": 3,
+          "fused_calls": 240
+        },
+        "replays": 7311,
+        "device_counters": null,
+        "draft_graph_ms_median_by_variant": null
+      },
+      "router": {
+        "skipped": 2688,
+        "kept": 0,
+        "checked": 2436,
+        "violations": 0,
+        "logged": false
+      }
+    },
+    "config": "015b8ddd8644e340",
+    "variants": 5,
+    "replays": {
+      "DFlashCudaGraphManager": [
+        1482,
+        1454,
+        1468,
+        1443,
+        1464,
+        0
+      ],
+      "target": [
+        1449,
+        1428,
+        1442,
+        1417,
+        1438,
+        0
+      ]
+    },
+    "sets": {
+      "target": 5,
+      "DFlashCudaGraphManager": 5
+    },
+    "effective": {
+      "GLM_CERT_HEAD": "0",
+      "GLM_CERT_HEAD_MINTOK": false,
+      "GLM_DENSE_FAST": "0",
+      "GLM_DENSE_FAST_PREFILL": "0",
+      "GLM_DEVSELECT": "0",
+      "GLM_DFLASH_CTX_GRAPH": false,
+      "GLM_DRAFT_CONV_FUSED": "0",
+      "GLM_DRAFT_TRUNC": "0",
+      "GLM_DS_DRAFT_HEAD_FP4": "0",
+      "GLM_EARLY_PLAN": false,
+      "GLM_FLASHKDA_PREFILL": false,
+      "GLM_GATE_GEMV": "0",
+      "GLM_GUMBEL_COUPLED": "0",
+      "GLM_KDA_CONV_SPLIT": false,
+      "GLM_KDA_FLAG_FUSED": false,
+      "GLM_KDA_NOCOPY": false,
+      "GLM_KDA_STASH": false,
+      "GLM_KDA_STASH_NOCOPY": false,
+      "GLM_L2_PREFETCH": false,
+      "GLM_L2_PREFETCH_AR": false,
+      "GLM_L2_PREFETCH_DRAFT": false,
+      "GLM_L2_PREFETCH_DRAFT_MB": "0",
+      "GLM_L2_PREFETCH_MLA": false,
+      "GLM_L2_PREFETCH_MLA_AR": false,
+      "GLM_L2_PREFETCH_MLA_MB": "0",
+      "GLM_L2_PREFETCH_MOE": false,
+      "GLM_MARLIN_TUNE_ON": false,
+      "GLM_MHC_BF16W": false,
+      "GLM_MHC_FUSED": false,
+      "GLM_PF3_ACT": false,
+      "GLM_PF3_DOWN": false,
+      "GLM_PF3_SUMADD": false,
+      "GLM_PREFILL_SHARD": "0",
+      "GLM_PREFILL_SHARD_PAD": false,
+      "GLM_ROCE_AG_DIM0_NCCL": false,
+      "GLM_ROCE_PROXY_CPUS": "0",
+      "GLM_ROUTER_DEDUP": false,
+      "GLM_ROUTER_FP32OUT": false,
+      "GLM_ROUTER_GEMV": "0",
+      "GLM_TARGET_VOCAB_ARGMAX": "0",
+      "GLM_TRITON_MLA_PREFILL": false
+    }
+  },
+  {
+    "rank": 3,
+    "argmax": null,
+    "gumbel": null,
+    "armed": true,
+    "variant": 0,
+    "seq": 36,
+    "token": "89214-551008690981",
+    "kernel_checks": {
+      "conv": {
+        "mode": "off",
+        "installed": [
+          "cudagraph",
+          "model"
+        ],
+        "qualified_keys": 3,
+        "bad_keys": 0,
+        "counts": {
+          "qualified": 3,
+          "fused_calls": 240
+        },
+        "replays": 7311,
+        "device_counters": null,
+        "draft_graph_ms_median_by_variant": null
+      },
+      "router": {
+        "skipped": 2688,
+        "kept": 0,
+        "checked": 2436,
+        "violations": 0,
+        "logged": false
+      }
+    },
+    "config": "015b8ddd8644e340",
+    "variants": 5,
+    "replays": {
+      "DFlashCudaGraphManager": [
+        1482,
+        1454,
+        1468,
+        1443,
+        1464,
+        0
+      ],
+      "target": [
+        1449,
+        1428,
+        1442,
+        1417,
+        1438,
+        0
+      ]
+    },
+    "sets": {
+      "target": 5,
+      "DFlashCudaGraphManager": 5
+    },
+    "effective": {
+      "GLM_CERT_HEAD": "0",
+      "GLM_CERT_HEAD_MINTOK": false,
+      "GLM_DENSE_FAST": "0",
+      "GLM_DENSE_FAST_PREFILL": "0",
+      "GLM_DEVSELECT": "0",
+      "GLM_DFLASH_CTX_GRAPH": false,
+      "GLM_DRAFT_CONV_FUSED": "0",
+      "GLM_DRAFT_TRUNC": "0",
+      "GLM_DS_DRAFT_HEAD_FP4": "0",
+      "GLM_EARLY_PLAN": false,
+      "GLM_FLASHKDA_PREFILL": false,
+      "GLM_GATE_GEMV": "0",
+      "GLM_GUMBEL_COUPLED": "0",
+      "GLM_KDA_CONV_SPLIT": false,
+      "GLM_KDA_FLAG_FUSED": false,
+      "GLM_KDA_NOCOPY": false,
+      "GLM_KDA_STASH": false,
+      "GLM_KDA_STASH_NOCOPY": false,
+      "GLM_L2_PREFETCH": false,
+      "GLM_L2_PREFETCH_AR": false,
+      "GLM_L2_PREFETCH_DRAFT": false,
+      "GLM_L2_PREFETCH_DRAFT_MB": "0",
+      "GLM_L2_PREFETCH_MLA": false,
+      "GLM_L2_PREFETCH_MLA_AR": false,
+      "GLM_L2_PREFETCH_MLA_MB": "0",
+      "GLM_L2_PREFETCH_MOE": false,
+      "GLM_MARLIN_TUNE_ON": false,
+      "GLM_MHC_BF16W": false,
+      "GLM_MHC_FUSED": false,
+      "GLM_PF3_ACT": false,
+      "GLM_PF3_DOWN": false,
+      "GLM_PF3_SUMADD": false,
+      "GLM_PREFILL_SHARD": "0",
+      "GLM_PREFILL_SHARD_PAD": false,
+      "GLM_ROCE_AG_DIM0_NCCL": false,
+      "GLM_ROCE_PROXY_CPUS": "0",
+      "GLM_ROUTER_DEDUP": false,
+      "GLM_ROUTER_FP32OUT": false,
+      "GLM_ROUTER_GEMV": "0",
+      "GLM_TARGET_VOCAB_ARGMAX": "0",
+      "GLM_TRITON_MLA_PREFILL": false
+    }
+  }
+]

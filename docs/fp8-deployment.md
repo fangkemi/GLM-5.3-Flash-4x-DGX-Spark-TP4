@@ -140,3 +140,19 @@ long-prompt, high-resolution multi-image or sustained concurrency stress tests.
 Generated text differed between the greedy modes, so bitwise output equivalence
 was not established. Check `vllm:spec_decode_*` metrics and representative output
 quality when evaluating other workloads.
+
+
+### Single-request tuning update (2026-10-02)
+
+The current FP8+DFlash example keeps K=3 and MAX_SEQS=3, raises
+BATCHED_TOKENS to 8192, and enables GLM_DRAFT_CONV_FUSED=1 (with
+GLM_DRAFT_CONV_FUSED_QUAL=1) and GLM_ROUTER_DEDUP=1. With 17 GiB/rank
+the final boot reported 1,469,300 shared KV tokens. The earlier capacity and
+timings above describe the initial 4096-budget deployment.
+
+K=2 and K=4 were slower overall than K=3 on the three tested prompt types.
+The two kernel optimizations together reduced paired decode step time by
+about 1.1–1.3%; aggregate token/s and first-token improvement were not
+established beyond the identical-configuration control's variation.
+MAX_SEQS=4 was not tested because the primary workload is one request.
+See [the measurements, limitations and reproduction steps](results/2026-10-02-fp8-tuning.md).

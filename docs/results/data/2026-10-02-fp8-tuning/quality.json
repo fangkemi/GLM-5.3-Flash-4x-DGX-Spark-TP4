@@ -1,0 +1,2315 @@
+{
+  "k3-baseline": [
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.398466012,
+      "decode_tps": 106.04689869556401,
+      "wall_s": 0.46454563800000004,
+      "text": "{\"answer\": 132}",
+      "text_sha256": "cf3fa137d7cc1b4f2d9d0eb2976d641ed0f2b6f035019207dd06a36e716ea3b8",
+      "finish_reason": "stop",
+      "name": "math-47+85",
+      "passed": true,
+      "expected": {
+        "answer": 132
+      },
+      "parsed": {
+        "answer": 132
+      },
+      "strict_json_passed": true,
+      "semantic_passed": true
+    },
+    {
+      "tokens": 9,
+      "prompt_tokens": 35,
+      "ttft_s": 0.301729783,
+      "decode_tps": 116.03263197312253,
+      "wall_s": 0.37074511500000007,
+      "text": "{\"answer\": 221}",
+      "text_sha256": "dc9d61fbe1f6be8b176e4b758910f873374a1c7aaf7a44c695d01c56ed37e608",
+      "finish_reason": "stop",
+      "name": "math-13*17",
+      "passed": true,
+      "expected": {
+        "answer": 221
+      },
+      "parsed": {
+        "answer": 221
+      },
+      "strict_json_passed": true,
+      "semantic_passed": true
+    },
+    {
+      "tokens": 15,
+      "prompt_tokens": 35,
+      "ttft_s": 0.23063620100000004,
+      "decode_tps": 52.90856823084237,
+      "wall_s": 0.495310492,
+      "text": "19*23=437{\"answer\": 437}",
+      "text_sha256": "fe372a6607b2bfd2b5ce817d077d1ca93328aadc1089c16fe9deda627b8565e9",
+      "finish_reason": "stop",
+      "name": "math-19*23",
+      "passed": false,
+      "expected": {
+        "answer": 437
+      },
+      "parsed": null,
+      "strict_json_passed": false,
+      "semantic_passed": true
+    },
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.305843981,
+      "decode_tps": 105.62235490502464,
+      "wall_s": 0.3721850259999999,
+      "text": "{\"answer\": 86}",
+      "text_sha256": "0b4b3efdb3a415e380c8c5d6f565840fb9f63f6a2dc2211264529f825bb7958c",
+      "finish_reason": "stop",
+      "name": "math-143-57",
+      "passed": true,
+      "expected": {
+        "answer": 86
+      },
+      "parsed": {
+        "answer": 86
+      },
+      "strict_json_passed": true,
+      "semantic_passed": true
+    },
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.30975006999999977,
+      "decode_tps": 105.62458776232269,
+      "wall_s": 0.376088658,
+      "text": "{\"answer\": 12}",
+      "text_sha256": "40345004f28210dbced3489c740a6c9774aa2aadc5c6354e597bb3d2ebd04e7f",
+      "finish_reason": "stop",
+      "name": "math-144/12",
+      "passed": true,
+      "expected": {
+        "answer": 12
+      },
+      "parsed": {
+        "answer": 12
+      },
+      "strict_json_passed": true,
+      "semantic_passed": true
+    },
+    {
+      "tokens": 23,
+      "prompt_tokens": 45,
+      "ttft_s": 0.7513119490000002,
+      "decode_tps": 63.4916942690795,
+      "wall_s": 1.097886285,
+      "text": "{\"sorted\": [-2, 0, 5, 5, 9, 17]}",
+      "text_sha256": "ce0fe8830df929f7026dabb8742f0c83cf0c33b99041eaf62af81bd3e97cfca4",
+      "finish_reason": "stop",
+      "name": "sort",
+      "passed": true,
+      "expected": {
+        "sorted": [
+          -2,
+          0,
+          5,
+          5,
+          9,
+          17
+        ]
+      },
+      "parsed": {
+        "sorted": [
+          -2,
+          0,
+          5,
+          5,
+          9,
+          17
+        ]
+      },
+      "strict_json_passed": true,
+      "semantic_passed": true
+    },
+    {
+      "tokens": 38,
+      "prompt_tokens": 52,
+      "ttft_s": 0.7372026049999998,
+      "decode_tps": 45.49505108461609,
+      "wall_s": 1.550565684,
+      "text": "Even: 8, 12, 20 → sum 40```json\n{\"even\": [8, 12, 20], \"sum\": 40}\n```",
+      "text_sha256": "f19835d84934451372746a4a6b39e79866504ec2fda419a4fdcca50ba53d9977",
+      "finish_reason": "stop",
+      "name": "filter",
+      "passed": false,
+      "expected": {
+        "even": [
+          8,
+          12,
+          20
+        ],
+        "sum": 40
+      },
+      "parsed": null,
+      "strict_json_passed": false,
+      "semantic_passed": true
+    },
+    {
+      "tokens": 21,
+      "prompt_tokens": 46,
+      "ttft_s": 0.328657958,
+      "decode_tps": 57.593658007539865,
+      "wall_s": 0.6759875549999999,
+      "text": "```json\n{\"order\": [\"A\", \"B\", \"C\", \"D\"]}\n```",
+      "text_sha256": "420276b8f5d0c2966190799a3f8761f306708530258d7f310180ee33fdb59de1",
+      "finish_reason": "stop",
+      "name": "logic",
+      "passed": true,
+      "expected": {
+        "order": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      },
+      "parsed": {
+        "order": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      },
+      "strict_json_passed": true,
+      "semantic_passed": true
+    },
+    {
+      "tokens": 18,
+      "prompt_tokens": 39,
+      "ttft_s": 0.3182939530000004,
+      "decode_tps": 82.75173708795703,
+      "wall_s": 0.6262701130000004,
+      "text": "{\"text\": \"北京，上海，广州\", \"count\": 3}",
+      "text_sha256": "f3c302c42904324d49b348b30b0d1185fcba8a1447b8e94a23332016fd113c1a",
+      "finish_reason": "stop",
+      "name": "unicode",
+      "passed": true,
+      "expected": {
+        "text": "北京，上海，广州",
+        "count": 3
+      },
+      "parsed": {
+        "text": "北京，上海，广州",
+        "count": 3
+      },
+      "strict_json_passed": true,
+      "semantic_passed": true
+    },
+    {
+      "tokens": 15,
+      "prompt_tokens": 40,
+      "ttft_s": 0.28799750000000035,
+      "decode_tps": 65.49430825690544,
+      "wall_s": 0.501829485,
+      "text": "{\"red\":7,\"blue\":10,\"green\":5}",
+      "text_sha256": "28e8099982f47615fcdd6d51b4fd9dd0734d4f884bc7fc49ace3e0a1ac891925",
+      "finish_reason": "stop",
+      "name": "transform",
+      "passed": true,
+      "expected": {
+        "red": 7,
+        "blue": 10,
+        "green": 5
+      },
+      "parsed": {
+        "red": 7,
+        "blue": 10,
+        "green": 5
+      },
+      "strict_json_passed": true,
+      "semantic_passed": true
+    },
+    {
+      "tokens": 44,
+      "prompt_tokens": 13170,
+      "ttft_s": 9.576843228000001,
+      "decode_tps": 54.566074938275854,
+      "wall_s": 10.426417191000002,
+      "text": "{\"12\": \"6b51d431df5d\", \"301\": \"c3ea99f86b2f\", \"588\": \"a917ca757ac5\"}",
+      "text_sha256": "2224f8b786790cc92eea07e6afdd6294ed0f1db8cfdc4e1cb44c78c7b1e1e8f9",
+      "finish_reason": "stop",
+      "name": "long-recall",
+      "passed": true,
+      "expected": {
+        "12": "6b51d431df5d",
+        "301": "c3ea99f86b2f",
+        "588": "a917ca757ac5"
+      },
+      "parsed": {
+        "12": "6b51d431df5d",
+        "301": "c3ea99f86b2f",
+        "588": "a917ca757ac5"
+      },
+      "strict_json_passed": true,
+      "semantic_passed": true
+    }
+  ],
+  "k2": [
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.9240298550000148,
+      "decode_tps": 110.61319022471847,
+      "wall_s": 1.0496454560000075,
+      "text": "{\"answer\": 132}",
+      "text_sha256": "cf3fa137d7cc1b4f2d9d0eb2976d641ed0f2b6f035019207dd06a36e716ea3b8",
+      "finish_reason": "stop",
+      "name": "math-47+85",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 132
+      },
+      "parsed": {
+        "answer": 132
+      }
+    },
+    {
+      "tokens": 9,
+      "prompt_tokens": 35,
+      "ttft_s": 0.28562807899999143,
+      "decode_tps": 60.608791674954425,
+      "wall_s": 0.41769586099997014,
+      "text": "{\"answer\": 221}",
+      "text_sha256": "dc9d61fbe1f6be8b176e4b758910f873374a1c7aaf7a44c695d01c56ed37e608",
+      "finish_reason": "stop",
+      "name": "math-13*17",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 221
+      },
+      "parsed": {
+        "answer": 221
+      }
+    },
+    {
+      "tokens": 15,
+      "prompt_tokens": 35,
+      "ttft_s": 0.21955119400001877,
+      "decode_tps": 43.69500410236587,
+      "wall_s": 0.5400258740000368,
+      "text": "19*23=437{\"answer\": 437}",
+      "text_sha256": "fe372a6607b2bfd2b5ce817d077d1ca93328aadc1089c16fe9deda627b8565e9",
+      "finish_reason": "stop",
+      "name": "math-19*23",
+      "passed": false,
+      "strict_json_passed": false,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 437
+      },
+      "parsed": null
+    },
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.2979532699999936,
+      "decode_tps": 109.6151496655103,
+      "wall_s": 0.423557666000022,
+      "text": "{\"answer\": 86}",
+      "text_sha256": "0b4b3efdb3a415e380c8c5d6f565840fb9f63f6a2dc2211264529f825bb7958c",
+      "finish_reason": "stop",
+      "name": "math-143-57",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 86
+      },
+      "parsed": {
+        "answer": 86
+      }
+    },
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.2994387019999749,
+      "decode_tps": 107.87757996748643,
+      "wall_s": 0.426586790999977,
+      "text": "{\"answer\": 12}",
+      "text_sha256": "40345004f28210dbced3489c740a6c9774aa2aadc5c6354e597bb3d2ebd04e7f",
+      "finish_reason": "stop",
+      "name": "math-144/12",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 12
+      },
+      "parsed": {
+        "answer": 12
+      }
+    },
+    {
+      "tokens": 23,
+      "prompt_tokens": 45,
+      "ttft_s": 0.3415780409999911,
+      "decode_tps": 48.095586813227875,
+      "wall_s": 0.7991001629999914,
+      "text": "{\"sorted\": [-2, 0, 5, 5, 9, 17]}",
+      "text_sha256": "ce0fe8830df929f7026dabb8742f0c83cf0c33b99041eaf62af81bd3e97cfca4",
+      "finish_reason": "stop",
+      "name": "sort",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "sorted": [
+          -2,
+          0,
+          5,
+          5,
+          9,
+          17
+        ]
+      },
+      "parsed": {
+        "sorted": [
+          -2,
+          0,
+          5,
+          5,
+          9,
+          17
+        ]
+      }
+    },
+    {
+      "tokens": 38,
+      "prompt_tokens": 52,
+      "ttft_s": 0.29274252999999817,
+      "decode_tps": 43.70551491011659,
+      "wall_s": 1.2036069289999887,
+      "text": "Even: 8, 12, 20 → sum 40```json\n{\"even\": [8, 12, 20], \"sum\": 40}\n```",
+      "text_sha256": "f19835d84934451372746a4a6b39e79866504ec2fda419a4fdcca50ba53d9977",
+      "finish_reason": "stop",
+      "name": "filter",
+      "passed": false,
+      "strict_json_passed": false,
+      "semantic_passed": true,
+      "expected": {
+        "even": [
+          8,
+          12,
+          20
+        ],
+        "sum": 40
+      },
+      "parsed": null
+    },
+    {
+      "tokens": 21,
+      "prompt_tokens": 46,
+      "ttft_s": 0.32066951500002006,
+      "decode_tps": 51.6449510837096,
+      "wall_s": 0.8502110000000016,
+      "text": "```json\n{\"order\": [\"A\", \"B\", \"C\", \"D\"]}\n```",
+      "text_sha256": "420276b8f5d0c2966190799a3f8761f306708530258d7f310180ee33fdb59de1",
+      "finish_reason": "stop",
+      "name": "logic",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "order": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      },
+      "parsed": {
+        "order": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      }
+    },
+    {
+      "tokens": 18,
+      "prompt_tokens": 39,
+      "ttft_s": 0.2780805609999675,
+      "decode_tps": 51.93413360024518,
+      "wall_s": 0.6054929719999791,
+      "text": "{\"text\": \"北京，上海，广州\", \"count\": 3}",
+      "text_sha256": "f3c302c42904324d49b348b30b0d1185fcba8a1447b8e94a23332016fd113c1a",
+      "finish_reason": "stop",
+      "name": "unicode",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "text": "北京，上海，广州",
+        "count": 3
+      },
+      "parsed": {
+        "text": "北京，上海，广州",
+        "count": 3
+      }
+    },
+    {
+      "tokens": 15,
+      "prompt_tokens": 40,
+      "ttft_s": 0.3776065460000382,
+      "decode_tps": 74.52371190410159,
+      "wall_s": 0.5655584170000338,
+      "text": "{\"red\":7,\"blue\":10,\"green\":5}",
+      "text_sha256": "28e8099982f47615fcdd6d51b4fd9dd0734d4f884bc7fc49ace3e0a1ac891925",
+      "finish_reason": "stop",
+      "name": "transform",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "red": 7,
+        "blue": 10,
+        "green": 5
+      },
+      "parsed": {
+        "red": 7,
+        "blue": 10,
+        "green": 5
+      }
+    },
+    {
+      "tokens": 44,
+      "prompt_tokens": 13170,
+      "ttft_s": 9.646941319999996,
+      "decode_tps": 47.3613882922587,
+      "wall_s": 10.554928968000013,
+      "text": "{\"12\": \"6b51d431df5d\", \"301\": \"c3ea99f86b2f\", \"588\": \"a917ca757ac5\"}",
+      "text_sha256": "2224f8b786790cc92eea07e6afdd6294ed0f1db8cfdc4e1cb44c78c7b1e1e8f9",
+      "finish_reason": "stop",
+      "name": "long-recall",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "12": "6b51d431df5d",
+        "301": "c3ea99f86b2f",
+        "588": "a917ca757ac5"
+      },
+      "parsed": {
+        "12": "6b51d431df5d",
+        "301": "c3ea99f86b2f",
+        "588": "a917ca757ac5"
+      }
+    }
+  ],
+  "k4": [
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 1.1018083559999923,
+      "decode_tps": 95.60542689727046,
+      "wall_s": 1.1751427629999966,
+      "text": "{\"answer\": 132}",
+      "text_sha256": "cf3fa137d7cc1b4f2d9d0eb2976d641ed0f2b6f035019207dd06a36e716ea3b8",
+      "finish_reason": "stop",
+      "name": "math-47+85",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 132
+      },
+      "parsed": {
+        "answer": 132
+      }
+    },
+    {
+      "tokens": 9,
+      "prompt_tokens": 35,
+      "ttft_s": 0.3265974359999859,
+      "decode_tps": 101.66600463034794,
+      "wall_s": 0.40535758999999416,
+      "text": "{\"answer\": 221}",
+      "text_sha256": "dc9d61fbe1f6be8b176e4b758910f873374a1c7aaf7a44c695d01c56ed37e608",
+      "finish_reason": "stop",
+      "name": "math-13*17",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 221
+      },
+      "parsed": {
+        "answer": 221
+      }
+    },
+    {
+      "tokens": 15,
+      "prompt_tokens": 35,
+      "ttft_s": 0.25697711999998774,
+      "decode_tps": 60.77865989705962,
+      "wall_s": 0.4873861500000203,
+      "text": "19*23=437{\"answer\": 437}",
+      "text_sha256": "fe372a6607b2bfd2b5ce817d077d1ca93328aadc1089c16fe9deda627b8565e9",
+      "finish_reason": "stop",
+      "name": "math-19*23",
+      "passed": false,
+      "strict_json_passed": false,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 437
+      },
+      "parsed": null
+    },
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.3309602619999623,
+      "decode_tps": 93.68007702321675,
+      "wall_s": 0.40575457399995685,
+      "text": "{\"answer\": 86}",
+      "text_sha256": "0b4b3efdb3a415e380c8c5d6f565840fb9f63f6a2dc2211264529f825bb7958c",
+      "finish_reason": "stop",
+      "name": "math-143-57",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 86
+      },
+      "parsed": {
+        "answer": 86
+      }
+    },
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.33195157800003017,
+      "decode_tps": 93.64491994837611,
+      "wall_s": 0.40676683600003116,
+      "text": "{\"answer\": 12}",
+      "text_sha256": "40345004f28210dbced3489c740a6c9774aa2aadc5c6354e597bb3d2ebd04e7f",
+      "finish_reason": "stop",
+      "name": "math-144/12",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 12
+      },
+      "parsed": {
+        "answer": 12
+      }
+    },
+    {
+      "tokens": 23,
+      "prompt_tokens": 45,
+      "ttft_s": 0.36558971300001986,
+      "decode_tps": 69.65860551742226,
+      "wall_s": 0.6814848910000251,
+      "text": "{\"sorted\": [-2, 0, 5, 5, 9, 17]}",
+      "text_sha256": "ce0fe8830df929f7026dabb8742f0c83cf0c33b99041eaf62af81bd3e97cfca4",
+      "finish_reason": "stop",
+      "name": "sort",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "sorted": [
+          -2,
+          0,
+          5,
+          5,
+          9,
+          17
+        ]
+      },
+      "parsed": {
+        "sorted": [
+          -2,
+          0,
+          5,
+          5,
+          9,
+          17
+        ]
+      }
+    },
+    {
+      "tokens": 38,
+      "prompt_tokens": 52,
+      "ttft_s": 0.3188658230000101,
+      "decode_tps": 46.81117114946097,
+      "wall_s": 1.109349131999977,
+      "text": "Even: 8, 12, 20 → sum 40```json\n{\"even\": [8, 12, 20], \"sum\": 40}\n```",
+      "text_sha256": "f19835d84934451372746a4a6b39e79866504ec2fda419a4fdcca50ba53d9977",
+      "finish_reason": "stop",
+      "name": "filter",
+      "passed": false,
+      "strict_json_passed": false,
+      "semantic_passed": true,
+      "expected": {
+        "even": [
+          8,
+          12,
+          20
+        ],
+        "sum": 40
+      },
+      "parsed": null
+    },
+    {
+      "tokens": 21,
+      "prompt_tokens": 46,
+      "ttft_s": 0.35376581000002716,
+      "decode_tps": 59.230053665660186,
+      "wall_s": 0.6915016350000087,
+      "text": "```json\n{\"order\": [\"A\", \"B\", \"C\", \"D\"]}\n```",
+      "text_sha256": "420276b8f5d0c2966190799a3f8761f306708530258d7f310180ee33fdb59de1",
+      "finish_reason": "stop",
+      "name": "logic",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "order": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      },
+      "parsed": {
+        "order": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      }
+    },
+    {
+      "tokens": 18,
+      "prompt_tokens": 39,
+      "ttft_s": 0.331505672999981,
+      "decode_tps": 73.18941369893886,
+      "wall_s": 0.5638520339999786,
+      "text": "{\"text\": \"北京，上海，广州\", \"count\": 3}",
+      "text_sha256": "f3c302c42904324d49b348b30b0d1185fcba8a1447b8e94a23332016fd113c1a",
+      "finish_reason": "stop",
+      "name": "unicode",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "text": "北京，上海，广州",
+        "count": 3
+      },
+      "parsed": {
+        "text": "北京，上海，广州",
+        "count": 3
+      }
+    },
+    {
+      "tokens": 15,
+      "prompt_tokens": 40,
+      "ttft_s": 0.34566449099997953,
+      "decode_tps": 86.04920608296456,
+      "wall_s": 0.5084313399999587,
+      "text": "{\"red\":7,\"blue\":10,\"green\":5}",
+      "text_sha256": "28e8099982f47615fcdd6d51b4fd9dd0734d4f884bc7fc49ace3e0a1ac891925",
+      "finish_reason": "stop",
+      "name": "transform",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "red": 7,
+        "blue": 10,
+        "green": 5
+      },
+      "parsed": {
+        "red": 7,
+        "blue": 10,
+        "green": 5
+      }
+    },
+    {
+      "tokens": 44,
+      "prompt_tokens": 13170,
+      "ttft_s": 9.69717605400001,
+      "decode_tps": 53.27230741914168,
+      "wall_s": 10.575959914999999,
+      "text": "{\"12\": \"6b51d431df5d\", \"301\": \"c3ea99f86b2f\", \"588\": \"a917ca757ac5\"}",
+      "text_sha256": "2224f8b786790cc92eea07e6afdd6294ed0f1db8cfdc4e1cb44c78c7b1e1e8f9",
+      "finish_reason": "stop",
+      "name": "long-recall",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "12": "6b51d431df5d",
+        "301": "c3ea99f86b2f",
+        "588": "a917ca757ac5"
+      },
+      "parsed": {
+        "12": "6b51d431df5d",
+        "301": "c3ea99f86b2f",
+        "588": "a917ca757ac5"
+      }
+    }
+  ],
+  "kernels-v0": [
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.923865342,
+      "decode_tps": 104.40655159463779,
+      "wall_s": 0.990989838,
+      "text": "{\"answer\": 132}",
+      "text_sha256": "cf3fa137d7cc1b4f2d9d0eb2976d641ed0f2b6f035019207dd06a36e716ea3b8",
+      "finish_reason": "stop",
+      "name": "math-47+85",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 132
+      },
+      "parsed": {
+        "answer": 132
+      }
+    },
+    {
+      "tokens": 9,
+      "prompt_tokens": 35,
+      "ttft_s": 0.30547631200000014,
+      "decode_tps": 119.70798314882705,
+      "wall_s": 0.37237886500000017,
+      "text": "{\"answer\": 221}",
+      "text_sha256": "dc9d61fbe1f6be8b176e4b758910f873374a1c7aaf7a44c695d01c56ed37e608",
+      "finish_reason": "stop",
+      "name": "math-13*17",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 221
+      },
+      "parsed": {
+        "answer": 221
+      }
+    },
+    {
+      "tokens": 15,
+      "prompt_tokens": 35,
+      "ttft_s": 0.22035202499999995,
+      "decode_tps": 42.99871595391614,
+      "wall_s": 0.5460236709999999,
+      "text": "19*23=437{\"answer\": 437}",
+      "text_sha256": "fe372a6607b2bfd2b5ce817d077d1ca93328aadc1089c16fe9deda627b8565e9",
+      "finish_reason": "stop",
+      "name": "math-19*23",
+      "passed": false,
+      "strict_json_passed": false,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 437
+      },
+      "parsed": null
+    },
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.26998520999999975,
+      "decode_tps": 100.62493547425979,
+      "wall_s": 0.33963316899999985,
+      "text": "{\"answer\": 86}",
+      "text_sha256": "0b4b3efdb3a415e380c8c5d6f565840fb9f63f6a2dc2211264529f825bb7958c",
+      "finish_reason": "stop",
+      "name": "math-143-57",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 86
+      },
+      "parsed": {
+        "answer": 86
+      }
+    },
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.310669839,
+      "decode_tps": 102.58337922107685,
+      "wall_s": 0.3789905670000002,
+      "text": "{\"answer\": 12}",
+      "text_sha256": "40345004f28210dbced3489c740a6c9774aa2aadc5c6354e597bb3d2ebd04e7f",
+      "finish_reason": "stop",
+      "name": "math-144/12",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 12
+      },
+      "parsed": {
+        "answer": 12
+      }
+    },
+    {
+      "tokens": 23,
+      "prompt_tokens": 45,
+      "ttft_s": 0.356607586,
+      "decode_tps": 65.52912455195464,
+      "wall_s": 0.6924204060000001,
+      "text": "{\"sorted\": [-2, 0, 5, 5, 9, 17]}",
+      "text_sha256": "ce0fe8830df929f7026dabb8742f0c83cf0c33b99041eaf62af81bd3e97cfca4",
+      "finish_reason": "stop",
+      "name": "sort",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "sorted": [
+          -2,
+          0,
+          5,
+          5,
+          9,
+          17
+        ]
+      },
+      "parsed": {
+        "sorted": [
+          -2,
+          0,
+          5,
+          5,
+          9,
+          17
+        ]
+      }
+    },
+    {
+      "tokens": 35,
+      "prompt_tokens": 52,
+      "ttft_s": 0.29651577299999987,
+      "decode_tps": 45.074555801024054,
+      "wall_s": 1.0509018720000003,
+      "text": "Even: 8,12,20 → 40```json\n{\"even\": [8, 12, 20], \"sum\": 40}\n```",
+      "text_sha256": "c34ab48219040f26a39a084df8e3695ac8be84dbbcaede18620547a0bda7e679",
+      "finish_reason": "stop",
+      "name": "filter",
+      "passed": false,
+      "strict_json_passed": false,
+      "semantic_passed": true,
+      "expected": {
+        "even": [
+          8,
+          12,
+          20
+        ],
+        "sum": 40
+      },
+      "parsed": null
+    },
+    {
+      "tokens": 21,
+      "prompt_tokens": 46,
+      "ttft_s": 0.3324263820000004,
+      "decode_tps": 60.872117135338456,
+      "wall_s": 0.661116604,
+      "text": "```json\n{\"order\": [\"A\", \"B\", \"C\", \"D\"]}\n```",
+      "text_sha256": "420276b8f5d0c2966190799a3f8761f306708530258d7f310180ee33fdb59de1",
+      "finish_reason": "stop",
+      "name": "logic",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "order": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      },
+      "parsed": {
+        "order": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      }
+    },
+    {
+      "tokens": 18,
+      "prompt_tokens": 39,
+      "ttft_s": 0.3253018870000002,
+      "decode_tps": 83.02264063549394,
+      "wall_s": 0.5921222799999999,
+      "text": "{\"text\": \"北京，上海，广州\", \"count\": 3}",
+      "text_sha256": "f3c302c42904324d49b348b30b0d1185fcba8a1447b8e94a23332016fd113c1a",
+      "finish_reason": "stop",
+      "name": "unicode",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "text": "北京，上海，广州",
+        "count": 3
+      },
+      "parsed": {
+        "text": "北京，上海，广州",
+        "count": 3
+      }
+    },
+    {
+      "tokens": 15,
+      "prompt_tokens": 40,
+      "ttft_s": 0.32340125200000003,
+      "decode_tps": 66.72906374314312,
+      "wall_s": 0.5332841620000002,
+      "text": "{\"red\":7,\"blue\":10,\"green\":5}",
+      "text_sha256": "28e8099982f47615fcdd6d51b4fd9dd0734d4f884bc7fc49ace3e0a1ac891925",
+      "finish_reason": "stop",
+      "name": "transform",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "red": 7,
+        "blue": 10,
+        "green": 5
+      },
+      "parsed": {
+        "red": 7,
+        "blue": 10,
+        "green": 5
+      }
+    },
+    {
+      "tokens": 44,
+      "prompt_tokens": 13170,
+      "ttft_s": 9.735128404000001,
+      "decode_tps": 56.261134070254926,
+      "wall_s": 10.560503888,
+      "text": "{\"12\": \"6b51d431df5d\", \"301\": \"c3ea99f86b2f\", \"588\": \"a917ca757ac5\"}",
+      "text_sha256": "2224f8b786790cc92eea07e6afdd6294ed0f1db8cfdc4e1cb44c78c7b1e1e8f9",
+      "finish_reason": "stop",
+      "name": "long-recall",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "12": "6b51d431df5d",
+        "301": "c3ea99f86b2f",
+        "588": "a917ca757ac5"
+      },
+      "parsed": {
+        "12": "6b51d431df5d",
+        "301": "c3ea99f86b2f",
+        "588": "a917ca757ac5"
+      }
+    }
+  ],
+  "kernels-v1": [
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.2756880259999974,
+      "decode_tps": 101.61867369136273,
+      "wall_s": 0.3446536029999976,
+      "text": "{\"answer\": 132}",
+      "text_sha256": "cf3fa137d7cc1b4f2d9d0eb2976d641ed0f2b6f035019207dd06a36e716ea3b8",
+      "finish_reason": "stop",
+      "name": "math-47+85",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 132
+      },
+      "parsed": {
+        "answer": 132
+      }
+    },
+    {
+      "tokens": 9,
+      "prompt_tokens": 35,
+      "ttft_s": 0.30135214300000257,
+      "decode_tps": 119.2499002400106,
+      "wall_s": 0.36851771799999966,
+      "text": "{\"answer\": 221}",
+      "text_sha256": "dc9d61fbe1f6be8b176e4b758910f873374a1c7aaf7a44c695d01c56ed37e608",
+      "finish_reason": "stop",
+      "name": "math-13*17",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 221
+      },
+      "parsed": {
+        "answer": 221
+      }
+    },
+    {
+      "tokens": 15,
+      "prompt_tokens": 35,
+      "ttft_s": 0.22852424899999946,
+      "decode_tps": 52.56618325590556,
+      "wall_s": 0.4949327239999981,
+      "text": "19*23=437{\"answer\": 437}",
+      "text_sha256": "fe372a6607b2bfd2b5ce817d077d1ca93328aadc1089c16fe9deda627b8565e9",
+      "finish_reason": "stop",
+      "name": "math-19*23",
+      "passed": false,
+      "strict_json_passed": false,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 437
+      },
+      "parsed": null
+    },
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.3585817870000021,
+      "decode_tps": 398.3340305127209,
+      "wall_s": 0.37623609200000274,
+      "text": "{\"answer\": 86}",
+      "text_sha256": "0b4b3efdb3a415e380c8c5d6f565840fb9f63f6a2dc2211264529f825bb7958c",
+      "finish_reason": "stop",
+      "name": "math-143-57",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 86
+      },
+      "parsed": {
+        "answer": 86
+      }
+    },
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.3047776649999996,
+      "decode_tps": 107.12042634419326,
+      "wall_s": 0.37019867300000087,
+      "text": "{\"answer\": 12}",
+      "text_sha256": "40345004f28210dbced3489c740a6c9774aa2aadc5c6354e597bb3d2ebd04e7f",
+      "finish_reason": "stop",
+      "name": "math-144/12",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 12
+      },
+      "parsed": {
+        "answer": 12
+      }
+    },
+    {
+      "tokens": 23,
+      "prompt_tokens": 45,
+      "ttft_s": 0.3276493380000005,
+      "decode_tps": 63.15800213566486,
+      "wall_s": 0.6760568130000024,
+      "text": "{\"sorted\": [-2, 0, 5, 5, 9, 17]}",
+      "text_sha256": "ce0fe8830df929f7026dabb8742f0c83cf0c33b99041eaf62af81bd3e97cfca4",
+      "finish_reason": "stop",
+      "name": "sort",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "sorted": [
+          -2,
+          0,
+          5,
+          5,
+          9,
+          17
+        ]
+      },
+      "parsed": {
+        "sorted": [
+          -2,
+          0,
+          5,
+          5,
+          9,
+          17
+        ]
+      }
+    },
+    {
+      "tokens": 35,
+      "prompt_tokens": 52,
+      "ttft_s": 0.30718245999999994,
+      "decode_tps": 46.385213478811316,
+      "wall_s": 1.040325242999998,
+      "text": "Even: 8,12,20 → 40```json\n{\"even\": [8, 12, 20], \"sum\": 40}\n```",
+      "text_sha256": "c34ab48219040f26a39a084df8e3695ac8be84dbbcaede18620547a0bda7e679",
+      "finish_reason": "stop",
+      "name": "filter",
+      "passed": false,
+      "strict_json_passed": false,
+      "semantic_passed": true,
+      "expected": {
+        "even": [
+          8,
+          12,
+          20
+        ],
+        "sum": 40
+      },
+      "parsed": null
+    },
+    {
+      "tokens": 21,
+      "prompt_tokens": 46,
+      "ttft_s": 0.3234303929999989,
+      "decode_tps": 58.49128497839878,
+      "wall_s": 0.6654586229999992,
+      "text": "```json\n{\"order\": [\"A\", \"B\", \"C\", \"D\"]}\n```",
+      "text_sha256": "420276b8f5d0c2966190799a3f8761f306708530258d7f310180ee33fdb59de1",
+      "finish_reason": "stop",
+      "name": "logic",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "order": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      },
+      "parsed": {
+        "order": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      }
+    },
+    {
+      "tokens": 18,
+      "prompt_tokens": 39,
+      "ttft_s": 0.3010896969999983,
+      "decode_tps": 83.40314094462524,
+      "wall_s": 0.5672776889999973,
+      "text": "{\"text\": \"北京，上海，广州\", \"count\": 3}",
+      "text_sha256": "f3c302c42904324d49b348b30b0d1185fcba8a1447b8e94a23332016fd113c1a",
+      "finish_reason": "stop",
+      "name": "unicode",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "text": "北京，上海，广州",
+        "count": 3
+      },
+      "parsed": {
+        "text": "北京，上海，广州",
+        "count": 3
+      }
+    },
+    {
+      "tokens": 15,
+      "prompt_tokens": 40,
+      "ttft_s": 0.32336789200000027,
+      "decode_tps": 65.80038795250694,
+      "wall_s": 0.5362589520000007,
+      "text": "{\"red\":7,\"blue\":10,\"green\":5}",
+      "text_sha256": "28e8099982f47615fcdd6d51b4fd9dd0734d4f884bc7fc49ace3e0a1ac891925",
+      "finish_reason": "stop",
+      "name": "transform",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "red": 7,
+        "blue": 10,
+        "green": 5
+      },
+      "parsed": {
+        "red": 7,
+        "blue": 10,
+        "green": 5
+      }
+    },
+    {
+      "tokens": 49,
+      "prompt_tokens": 13170,
+      "ttft_s": 1.4407204510000007,
+      "decode_tps": 52.322439216131336,
+      "wall_s": 2.3581822740000007,
+      "text": "{\n  \"12\": \"6b51d431df5d\",\n  \"301\": \"c3ea99f86b2f\",\n  \"588\": \"a917ca757ac5\"\n}",
+      "text_sha256": "3b020c3d4eeef749cda938b9bf209889de03bc3deb66eaa6517bbf01babcef41",
+      "finish_reason": "stop",
+      "name": "long-recall",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "12": "6b51d431df5d",
+        "301": "c3ea99f86b2f",
+        "588": "a917ca757ac5"
+      },
+      "parsed": {
+        "12": "6b51d431df5d",
+        "301": "c3ea99f86b2f",
+        "588": "a917ca757ac5"
+      }
+    }
+  ],
+  "kernels-v2": [
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.2741082920000011,
+      "decode_tps": 103.70982949763344,
+      "wall_s": 0.3416801100000022,
+      "text": "{\"answer\": 132}",
+      "text_sha256": "cf3fa137d7cc1b4f2d9d0eb2976d641ed0f2b6f035019207dd06a36e716ea3b8",
+      "finish_reason": "stop",
+      "name": "math-47+85",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 132
+      },
+      "parsed": {
+        "answer": 132
+      }
+    },
+    {
+      "tokens": 9,
+      "prompt_tokens": 35,
+      "ttft_s": 0.30779985300000234,
+      "decode_tps": 68.00893753054396,
+      "wall_s": 0.4255101890000006,
+      "text": "{\"answer\": 221}",
+      "text_sha256": "dc9d61fbe1f6be8b176e4b758910f873374a1c7aaf7a44c695d01c56ed37e608",
+      "finish_reason": "stop",
+      "name": "math-13*17",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 221
+      },
+      "parsed": {
+        "answer": 221
+      }
+    },
+    {
+      "tokens": 15,
+      "prompt_tokens": 35,
+      "ttft_s": 0.21444567699999695,
+      "decode_tps": 52.1981696950415,
+      "wall_s": 0.4827354559999968,
+      "text": "19*23=437{\"answer\": 437}",
+      "text_sha256": "fe372a6607b2bfd2b5ce817d077d1ca93328aadc1089c16fe9deda627b8565e9",
+      "finish_reason": "stop",
+      "name": "math-19*23",
+      "passed": false,
+      "strict_json_passed": false,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 437
+      },
+      "parsed": null
+    },
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.30703595299999975,
+      "decode_tps": 89.3264900054118,
+      "wall_s": 0.38547536099999746,
+      "text": "{\"answer\": 86}",
+      "text_sha256": "0b4b3efdb3a415e380c8c5d6f565840fb9f63f6a2dc2211264529f825bb7958c",
+      "finish_reason": "stop",
+      "name": "math-143-57",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 86
+      },
+      "parsed": {
+        "answer": 86
+      }
+    },
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.29417779799999977,
+      "decode_tps": 105.30044692067005,
+      "wall_s": 0.36073059900000004,
+      "text": "{\"answer\": 12}",
+      "text_sha256": "40345004f28210dbced3489c740a6c9774aa2aadc5c6354e597bb3d2ebd04e7f",
+      "finish_reason": "stop",
+      "name": "math-144/12",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 12
+      },
+      "parsed": {
+        "answer": 12
+      }
+    },
+    {
+      "tokens": 23,
+      "prompt_tokens": 45,
+      "ttft_s": 0.3325657999999976,
+      "decode_tps": 51.050613978076626,
+      "wall_s": 0.7635852419999978,
+      "text": "{\"sorted\": [-2, 0, 5, 5, 9, 17]}",
+      "text_sha256": "ce0fe8830df929f7026dabb8742f0c83cf0c33b99041eaf62af81bd3e97cfca4",
+      "finish_reason": "stop",
+      "name": "sort",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "sorted": [
+          -2,
+          0,
+          5,
+          5,
+          9,
+          17
+        ]
+      },
+      "parsed": {
+        "sorted": [
+          -2,
+          0,
+          5,
+          5,
+          9,
+          17
+        ]
+      }
+    },
+    {
+      "tokens": 35,
+      "prompt_tokens": 52,
+      "ttft_s": 0.24527539500000017,
+      "decode_tps": 42.27123268570159,
+      "wall_s": 1.0496858180000004,
+      "text": "Even: 8,12,20 → 40```json\n{\"even\": [8, 12, 20], \"sum\": 40}\n```",
+      "text_sha256": "c34ab48219040f26a39a084df8e3695ac8be84dbbcaede18620547a0bda7e679",
+      "finish_reason": "stop",
+      "name": "filter",
+      "passed": false,
+      "strict_json_passed": false,
+      "semantic_passed": true,
+      "expected": {
+        "even": [
+          8,
+          12,
+          20
+        ],
+        "sum": 40
+      },
+      "parsed": null
+    },
+    {
+      "tokens": 21,
+      "prompt_tokens": 46,
+      "ttft_s": 0.35085699100000056,
+      "decode_tps": 58.66325484305216,
+      "wall_s": 0.6918654790000005,
+      "text": "```json\n{\"order\": [\"A\", \"B\", \"C\", \"D\"]}\n```",
+      "text_sha256": "420276b8f5d0c2966190799a3f8761f306708530258d7f310180ee33fdb59de1",
+      "finish_reason": "stop",
+      "name": "logic",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "order": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      },
+      "parsed": {
+        "order": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      }
+    },
+    {
+      "tokens": 18,
+      "prompt_tokens": 39,
+      "ttft_s": 0.3124199979999993,
+      "decode_tps": 84.65748597066106,
+      "wall_s": 0.5736856599999989,
+      "text": "{\"text\": \"北京，上海，广州\", \"count\": 3}",
+      "text_sha256": "f3c302c42904324d49b348b30b0d1185fcba8a1447b8e94a23332016fd113c1a",
+      "finish_reason": "stop",
+      "name": "unicode",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "text": "北京，上海，广州",
+        "count": 3
+      },
+      "parsed": {
+        "text": "北京，上海，广州",
+        "count": 3
+      }
+    },
+    {
+      "tokens": 15,
+      "prompt_tokens": 40,
+      "ttft_s": 0.31893725999999845,
+      "decode_tps": 66.50498955346757,
+      "wall_s": 0.5295328409999982,
+      "text": "{\"red\":7,\"blue\":10,\"green\":5}",
+      "text_sha256": "28e8099982f47615fcdd6d51b4fd9dd0734d4f884bc7fc49ace3e0a1ac891925",
+      "finish_reason": "stop",
+      "name": "transform",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "red": 7,
+        "blue": 10,
+        "green": 5
+      },
+      "parsed": {
+        "red": 7,
+        "blue": 10,
+        "green": 5
+      }
+    },
+    {
+      "tokens": 49,
+      "prompt_tokens": 13170,
+      "ttft_s": 1.4410488840000042,
+      "decode_tps": 53.1189720756487,
+      "wall_s": 2.3447534800000014,
+      "text": "{\n  \"12\": \"6b51d431df5d\",\n  \"301\": \"c3ea99f86b2f\",\n  \"588\": \"a917ca757ac5\"\n}",
+      "text_sha256": "3b020c3d4eeef749cda938b9bf209889de03bc3deb66eaa6517bbf01babcef41",
+      "finish_reason": "stop",
+      "name": "long-recall",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "12": "6b51d431df5d",
+        "301": "c3ea99f86b2f",
+        "588": "a917ca757ac5"
+      },
+      "parsed": {
+        "12": "6b51d431df5d",
+        "301": "c3ea99f86b2f",
+        "588": "a917ca757ac5"
+      }
+    }
+  ],
+  "kernels-v3": [
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.26707312599999966,
+      "decode_tps": 104.29014184919922,
+      "wall_s": 0.3342744639999964,
+      "text": "{\"answer\": 132}",
+      "text_sha256": "cf3fa137d7cc1b4f2d9d0eb2976d641ed0f2b6f035019207dd06a36e716ea3b8",
+      "finish_reason": "stop",
+      "name": "math-47+85",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 132
+      },
+      "parsed": {
+        "answer": 132
+      }
+    },
+    {
+      "tokens": 9,
+      "prompt_tokens": 35,
+      "ttft_s": 0.34402947500000636,
+      "decode_tps": 117.34545856134388,
+      "wall_s": 0.4122860390000014,
+      "text": "{\"answer\": 221}",
+      "text_sha256": "dc9d61fbe1f6be8b176e4b758910f873374a1c7aaf7a44c695d01c56ed37e608",
+      "finish_reason": "stop",
+      "name": "math-13*17",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 221
+      },
+      "parsed": {
+        "answer": 221
+      }
+    },
+    {
+      "tokens": 15,
+      "prompt_tokens": 35,
+      "ttft_s": 0.2412028190000015,
+      "decode_tps": 53.570759346917086,
+      "wall_s": 0.5026200299999957,
+      "text": "19*23=437{\"answer\": 437}",
+      "text_sha256": "fe372a6607b2bfd2b5ce817d077d1ca93328aadc1089c16fe9deda627b8565e9",
+      "finish_reason": "stop",
+      "name": "math-19*23",
+      "passed": false,
+      "strict_json_passed": false,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 437
+      },
+      "parsed": null
+    },
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.3063459019999968,
+      "decode_tps": 105.07050914121673,
+      "wall_s": 0.37306387299999955,
+      "text": "{\"answer\": 86}",
+      "text_sha256": "0b4b3efdb3a415e380c8c5d6f565840fb9f63f6a2dc2211264529f825bb7958c",
+      "finish_reason": "stop",
+      "name": "math-143-57",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 86
+      },
+      "parsed": {
+        "answer": 86
+      }
+    },
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.29597837900000457,
+      "decode_tps": 107.05160056901525,
+      "wall_s": 0.36145841600000495,
+      "text": "{\"answer\": 12}",
+      "text_sha256": "40345004f28210dbced3489c740a6c9774aa2aadc5c6354e597bb3d2ebd04e7f",
+      "finish_reason": "stop",
+      "name": "math-144/12",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 12
+      },
+      "parsed": {
+        "answer": 12
+      }
+    },
+    {
+      "tokens": 23,
+      "prompt_tokens": 45,
+      "ttft_s": 0.33334146899999695,
+      "decode_tps": 64.99372944929615,
+      "wall_s": 0.6719134749999967,
+      "text": "{\"sorted\": [-2, 0, 5, 5, 9, 17]}",
+      "text_sha256": "ce0fe8830df929f7026dabb8742f0c83cf0c33b99041eaf62af81bd3e97cfca4",
+      "finish_reason": "stop",
+      "name": "sort",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "sorted": [
+          -2,
+          0,
+          5,
+          5,
+          9,
+          17
+        ]
+      },
+      "parsed": {
+        "sorted": [
+          -2,
+          0,
+          5,
+          5,
+          9,
+          17
+        ]
+      }
+    },
+    {
+      "tokens": 35,
+      "prompt_tokens": 52,
+      "ttft_s": 0.2808613870000016,
+      "decode_tps": 45.42668923783493,
+      "wall_s": 1.0293958009999997,
+      "text": "Even: 8,12,20 → 40```json\n{\"even\": [8, 12, 20], \"sum\": 40}\n```",
+      "text_sha256": "c34ab48219040f26a39a084df8e3695ac8be84dbbcaede18620547a0bda7e679",
+      "finish_reason": "stop",
+      "name": "filter",
+      "passed": false,
+      "strict_json_passed": false,
+      "semantic_passed": true,
+      "expected": {
+        "even": [
+          8,
+          12,
+          20
+        ],
+        "sum": 40
+      },
+      "parsed": null
+    },
+    {
+      "tokens": 21,
+      "prompt_tokens": 46,
+      "ttft_s": 0.33189506200000096,
+      "decode_tps": 59.19749320874468,
+      "wall_s": 0.6698245130000018,
+      "text": "```json\n{\"order\": [\"A\", \"B\", \"C\", \"D\"]}\n```",
+      "text_sha256": "420276b8f5d0c2966190799a3f8761f306708530258d7f310180ee33fdb59de1",
+      "finish_reason": "stop",
+      "name": "logic",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "order": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      },
+      "parsed": {
+        "order": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      }
+    },
+    {
+      "tokens": 18,
+      "prompt_tokens": 39,
+      "ttft_s": 0.33244140099999697,
+      "decode_tps": 87.4144424074643,
+      "wall_s": 0.5876130859999975,
+      "text": "{\"text\": \"北京，上海，广州\", \"count\": 3}",
+      "text_sha256": "f3c302c42904324d49b348b30b0d1185fcba8a1447b8e94a23332016fd113c1a",
+      "finish_reason": "stop",
+      "name": "unicode",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "text": "北京，上海，广州",
+        "count": 3
+      },
+      "parsed": {
+        "text": "北京，上海，广州",
+        "count": 3
+      }
+    },
+    {
+      "tokens": 15,
+      "prompt_tokens": 40,
+      "ttft_s": 0.3225441490000023,
+      "decode_tps": 66.50820358738675,
+      "wall_s": 0.5331444680000033,
+      "text": "{\"red\":7,\"blue\":10,\"green\":5}",
+      "text_sha256": "28e8099982f47615fcdd6d51b4fd9dd0734d4f884bc7fc49ace3e0a1ac891925",
+      "finish_reason": "stop",
+      "name": "transform",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "red": 7,
+        "blue": 10,
+        "green": 5
+      },
+      "parsed": {
+        "red": 7,
+        "blue": 10,
+        "green": 5
+      }
+    },
+    {
+      "tokens": 49,
+      "prompt_tokens": 13170,
+      "ttft_s": 1.4396148249999996,
+      "decode_tps": 52.4450055525877,
+      "wall_s": 2.3549363139999997,
+      "text": "{\n  \"12\": \"6b51d431df5d\",\n  \"301\": \"c3ea99f86b2f\",\n  \"588\": \"a917ca757ac5\"\n}",
+      "text_sha256": "3b020c3d4eeef749cda938b9bf209889de03bc3deb66eaa6517bbf01babcef41",
+      "finish_reason": "stop",
+      "name": "long-recall",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "12": "6b51d431df5d",
+        "301": "c3ea99f86b2f",
+        "588": "a917ca757ac5"
+      },
+      "parsed": {
+        "12": "6b51d431df5d",
+        "301": "c3ea99f86b2f",
+        "588": "a917ca757ac5"
+      }
+    }
+  ],
+  "kernels-v4": [
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.26710493400000246,
+      "decode_tps": 103.82770320691245,
+      "wall_s": 0.3345970510000029,
+      "text": "{\"answer\": 132}",
+      "text_sha256": "cf3fa137d7cc1b4f2d9d0eb2976d641ed0f2b6f035019207dd06a36e716ea3b8",
+      "finish_reason": "stop",
+      "name": "math-47+85",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 132
+      },
+      "parsed": {
+        "answer": 132
+      }
+    },
+    {
+      "tokens": 9,
+      "prompt_tokens": 35,
+      "ttft_s": 0.30965146300000157,
+      "decode_tps": 118.53578786574816,
+      "wall_s": 0.37722078699999884,
+      "text": "{\"answer\": 221}",
+      "text_sha256": "dc9d61fbe1f6be8b176e4b758910f873374a1c7aaf7a44c695d01c56ed37e608",
+      "finish_reason": "stop",
+      "name": "math-13*17",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 221
+      },
+      "parsed": {
+        "answer": 221
+      }
+    },
+    {
+      "tokens": 15,
+      "prompt_tokens": 35,
+      "ttft_s": 0.23118008299999815,
+      "decode_tps": 52.763552493708026,
+      "wall_s": 0.49661195799999547,
+      "text": "19*23=437{\"answer\": 437}",
+      "text_sha256": "fe372a6607b2bfd2b5ce817d077d1ca93328aadc1089c16fe9deda627b8565e9",
+      "finish_reason": "stop",
+      "name": "math-19*23",
+      "passed": false,
+      "strict_json_passed": false,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 437
+      },
+      "parsed": null
+    },
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.3048974510000022,
+      "decode_tps": 107.02344409699087,
+      "wall_s": 0.37038076700000033,
+      "text": "{\"answer\": 86}",
+      "text_sha256": "0b4b3efdb3a415e380c8c5d6f565840fb9f63f6a2dc2211264529f825bb7958c",
+      "finish_reason": "stop",
+      "name": "math-143-57",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 86
+      },
+      "parsed": {
+        "answer": 86
+      }
+    },
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.3086060039999978,
+      "decode_tps": 104.91824822557538,
+      "wall_s": 0.3754043379999956,
+      "text": "{\"answer\": 12}",
+      "text_sha256": "40345004f28210dbced3489c740a6c9774aa2aadc5c6354e597bb3d2ebd04e7f",
+      "finish_reason": "stop",
+      "name": "math-144/12",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 12
+      },
+      "parsed": {
+        "answer": 12
+      }
+    },
+    {
+      "tokens": 23,
+      "prompt_tokens": 45,
+      "ttft_s": 0.33109575499999977,
+      "decode_tps": 62.49882033476629,
+      "wall_s": 0.6831833459999999,
+      "text": "{\"sorted\": [-2, 0, 5, 5, 9, 17]}",
+      "text_sha256": "ce0fe8830df929f7026dabb8742f0c83cf0c33b99041eaf62af81bd3e97cfca4",
+      "finish_reason": "stop",
+      "name": "sort",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "sorted": [
+          -2,
+          0,
+          5,
+          5,
+          9,
+          17
+        ]
+      },
+      "parsed": {
+        "sorted": [
+          -2,
+          0,
+          5,
+          5,
+          9,
+          17
+        ]
+      }
+    },
+    {
+      "tokens": 38,
+      "prompt_tokens": 52,
+      "ttft_s": 0.35432468300000153,
+      "decode_tps": 55.34524569942193,
+      "wall_s": 1.0229358369999986,
+      "text": "Even: 8, 12, 20 → sum 40```json\n{\"even\": [8, 12, 20], \"sum\": 40}\n```",
+      "text_sha256": "f19835d84934451372746a4a6b39e79866504ec2fda419a4fdcca50ba53d9977",
+      "finish_reason": "stop",
+      "name": "filter",
+      "passed": false,
+      "strict_json_passed": false,
+      "semantic_passed": true,
+      "expected": {
+        "even": [
+          8,
+          12,
+          20
+        ],
+        "sum": 40
+      },
+      "parsed": null
+    },
+    {
+      "tokens": 21,
+      "prompt_tokens": 46,
+      "ttft_s": 0.3343993430000012,
+      "decode_tps": 58.9710936466188,
+      "wall_s": 0.6736251330000016,
+      "text": "```json\n{\"order\": [\"A\", \"B\", \"C\", \"D\"]}\n```",
+      "text_sha256": "420276b8f5d0c2966190799a3f8761f306708530258d7f310180ee33fdb59de1",
+      "finish_reason": "stop",
+      "name": "logic",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "order": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      },
+      "parsed": {
+        "order": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      }
+    },
+    {
+      "tokens": 18,
+      "prompt_tokens": 39,
+      "ttft_s": 0.31348293299999597,
+      "decode_tps": 82.7298788865726,
+      "wall_s": 0.5798059870000003,
+      "text": "{\"text\": \"北京，上海，广州\", \"count\": 3}",
+      "text_sha256": "f3c302c42904324d49b348b30b0d1185fcba8a1447b8e94a23332016fd113c1a",
+      "finish_reason": "stop",
+      "name": "unicode",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "text": "北京，上海，广州",
+        "count": 3
+      },
+      "parsed": {
+        "text": "北京，上海，广州",
+        "count": 3
+      }
+    },
+    {
+      "tokens": 15,
+      "prompt_tokens": 40,
+      "ttft_s": 0.3214256249999963,
+      "decode_tps": 64.81828079232801,
+      "wall_s": 0.5375040799999979,
+      "text": "{\"red\":7,\"blue\":10,\"green\":5}",
+      "text_sha256": "28e8099982f47615fcdd6d51b4fd9dd0734d4f884bc7fc49ace3e0a1ac891925",
+      "finish_reason": "stop",
+      "name": "transform",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "red": 7,
+        "blue": 10,
+        "green": 5
+      },
+      "parsed": {
+        "red": 7,
+        "blue": 10,
+        "green": 5
+      }
+    },
+    {
+      "tokens": 49,
+      "prompt_tokens": 13170,
+      "ttft_s": 1.4428128030000025,
+      "decode_tps": 52.57219985817296,
+      "wall_s": 2.3559186789999984,
+      "text": "{\n  \"12\": \"6b51d431df5d\",\n  \"301\": \"c3ea99f86b2f\",\n  \"588\": \"a917ca757ac5\"\n}",
+      "text_sha256": "3b020c3d4eeef749cda938b9bf209889de03bc3deb66eaa6517bbf01babcef41",
+      "finish_reason": "stop",
+      "name": "long-recall",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "12": "6b51d431df5d",
+        "301": "c3ea99f86b2f",
+        "588": "a917ca757ac5"
+      },
+      "parsed": {
+        "12": "6b51d431df5d",
+        "301": "c3ea99f86b2f",
+        "588": "a917ca757ac5"
+      }
+    }
+  ],
+  "final": [
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 1.0030888169999912,
+      "decode_tps": 126.80307404704587,
+      "wall_s": 1.0584323090000112,
+      "text": "{\"answer\": 132}",
+      "text_sha256": "cf3fa137d7cc1b4f2d9d0eb2976d641ed0f2b6f035019207dd06a36e716ea3b8",
+      "finish_reason": "stop",
+      "name": "math-47+85",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 132
+      },
+      "parsed": {
+        "answer": 132
+      }
+    },
+    {
+      "tokens": 9,
+      "prompt_tokens": 35,
+      "ttft_s": 0.3203537890000234,
+      "decode_tps": 115.3618391861351,
+      "wall_s": 0.38981062900001007,
+      "text": "{\"answer\": 221}",
+      "text_sha256": "dc9d61fbe1f6be8b176e4b758910f873374a1c7aaf7a44c695d01c56ed37e608",
+      "finish_reason": "stop",
+      "name": "math-13*17",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 221
+      },
+      "parsed": {
+        "answer": 221
+      }
+    },
+    {
+      "tokens": 15,
+      "prompt_tokens": 35,
+      "ttft_s": 0.22325497500003166,
+      "decode_tps": 49.58638139786764,
+      "wall_s": 0.50571970499999,
+      "text": "19*23=437{\"answer\": 437}",
+      "text_sha256": "fe372a6607b2bfd2b5ce817d077d1ca93328aadc1089c16fe9deda627b8565e9",
+      "finish_reason": "stop",
+      "name": "math-19*23",
+      "passed": false,
+      "strict_json_passed": false,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 437
+      },
+      "parsed": null
+    },
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.29423216899999716,
+      "decode_tps": 106.97797461044932,
+      "wall_s": 0.3597740980000026,
+      "text": "{\"answer\": 86}",
+      "text_sha256": "0b4b3efdb3a415e380c8c5d6f565840fb9f63f6a2dc2211264529f825bb7958c",
+      "finish_reason": "stop",
+      "name": "math-143-57",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 86
+      },
+      "parsed": {
+        "answer": 86
+      }
+    },
+    {
+      "tokens": 8,
+      "prompt_tokens": 35,
+      "ttft_s": 0.29132002099999,
+      "decode_tps": 106.52392217615133,
+      "wall_s": 0.35714349599999196,
+      "text": "{\"answer\": 12}",
+      "text_sha256": "40345004f28210dbced3489c740a6c9774aa2aadc5c6354e597bb3d2ebd04e7f",
+      "finish_reason": "stop",
+      "name": "math-144/12",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "answer": 12
+      },
+      "parsed": {
+        "answer": 12
+      }
+    },
+    {
+      "tokens": 23,
+      "prompt_tokens": 45,
+      "ttft_s": 0.35782000500000777,
+      "decode_tps": 64.66951830239249,
+      "wall_s": 0.6981347199999846,
+      "text": "{\"sorted\": [-2, 0, 5, 5, 9, 17]}",
+      "text_sha256": "ce0fe8830df929f7026dabb8742f0c83cf0c33b99041eaf62af81bd3e97cfca4",
+      "finish_reason": "stop",
+      "name": "sort",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "sorted": [
+          -2,
+          0,
+          5,
+          5,
+          9,
+          17
+        ]
+      },
+      "parsed": {
+        "sorted": [
+          -2,
+          0,
+          5,
+          5,
+          9,
+          17
+        ]
+      }
+    },
+    {
+      "tokens": 38,
+      "prompt_tokens": 52,
+      "ttft_s": 0.3120704319999845,
+      "decode_tps": 50.59206111564596,
+      "wall_s": 1.0435177960000033,
+      "text": "Even: 8, 12, 20 → sum 40```json\n{\"even\": [8, 12, 20], \"sum\": 40}\n```",
+      "text_sha256": "f19835d84934451372746a4a6b39e79866504ec2fda419a4fdcca50ba53d9977",
+      "finish_reason": "stop",
+      "name": "filter",
+      "passed": false,
+      "strict_json_passed": false,
+      "semantic_passed": true,
+      "expected": {
+        "even": [
+          8,
+          12,
+          20
+        ],
+        "sum": 40
+      },
+      "parsed": null
+    },
+    {
+      "tokens": 21,
+      "prompt_tokens": 46,
+      "ttft_s": 0.3446793950000142,
+      "decode_tps": 63.99132584779684,
+      "wall_s": 0.65740264599998,
+      "text": "```json\n{\"order\": [\"A\", \"B\", \"C\", \"D\"]}\n```",
+      "text_sha256": "420276b8f5d0c2966190799a3f8761f306708530258d7f310180ee33fdb59de1",
+      "finish_reason": "stop",
+      "name": "logic",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "order": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      },
+      "parsed": {
+        "order": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      }
+    },
+    {
+      "tokens": 18,
+      "prompt_tokens": 39,
+      "ttft_s": 0.3013989809999771,
+      "decode_tps": 83.46007236262989,
+      "wall_s": 0.5682936949999657,
+      "text": "{\"text\": \"北京，上海，广州\", \"count\": 3}",
+      "text_sha256": "f3c302c42904324d49b348b30b0d1185fcba8a1447b8e94a23332016fd113c1a",
+      "finish_reason": "stop",
+      "name": "unicode",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "text": "北京，上海，广州",
+        "count": 3
+      },
+      "parsed": {
+        "text": "北京，上海，广州",
+        "count": 3
+      }
+    },
+    {
+      "tokens": 15,
+      "prompt_tokens": 40,
+      "ttft_s": 0.3324995670000135,
+      "decode_tps": 71.28868375400711,
+      "wall_s": 0.5289914220000469,
+      "text": "{\"red\":7,\"blue\":10,\"green\":5}",
+      "text_sha256": "28e8099982f47615fcdd6d51b4fd9dd0734d4f884bc7fc49ace3e0a1ac891925",
+      "finish_reason": "stop",
+      "name": "transform",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "red": 7,
+        "blue": 10,
+        "green": 5
+      },
+      "parsed": {
+        "red": 7,
+        "blue": 10,
+        "green": 5
+      }
+    },
+    {
+      "tokens": 44,
+      "prompt_tokens": 13170,
+      "ttft_s": 9.888059271000031,
+      "decode_tps": 57.79904987126254,
+      "wall_s": 10.632128378000004,
+      "text": "{\"12\": \"6b51d431df5d\", \"301\": \"c3ea99f86b2f\", \"588\": \"a917ca757ac5\"}",
+      "text_sha256": "2224f8b786790cc92eea07e6afdd6294ed0f1db8cfdc4e1cb44c78c7b1e1e8f9",
+      "finish_reason": "stop",
+      "name": "long-recall",
+      "passed": true,
+      "strict_json_passed": true,
+      "semantic_passed": true,
+      "expected": {
+        "12": "6b51d431df5d",
+        "301": "c3ea99f86b2f",
+        "588": "a917ca757ac5"
+      },
+      "parsed": {
+        "12": "6b51d431df5d",
+        "301": "c3ea99f86b2f",
+        "588": "a917ca757ac5"
+      }
+    }
+  ]
+}

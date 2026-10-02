@@ -20,6 +20,14 @@ since 2026-09-19. It is fixed by `GLM_MAMBA_ALIGN_FIX=1` together with `BATCHED_
 and gated by `bench/prefix_scan.py`. Existing installations need a coordinated restart with fresh container names.
 [Cause, bisect and measurements](docs/results/2026-09-29-mamba-align-fix.md).
 
+## FP8 switchless deployment update (2026-10-02)
+
+For the dealignai FP8 target with the BF16 DFlash2 drafter, the verified single-request
+recipe now uses prefill 8192, fixed K=3 and qualified fused convolution plus router dedup.
+See the [comparison and validation](docs/results/2026-10-02-fp8-tuning.md) and
+`.env.fp8.dflash.switchless.example`. These measurements use the FP8 ring deployment;
+the NVFP4 switched results below describe a different configuration.
+
 ## Current results
 
 Release 3edfbc9 (`profiles/current.env`), fresh clone, measured 2026-09-29 14:04-14:27 on four DGX Spark. Every

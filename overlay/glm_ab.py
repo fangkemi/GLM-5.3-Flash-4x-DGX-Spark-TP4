@@ -420,7 +420,11 @@ def _gumbel_stats() -> dict | None:
 
 def status() -> dict:
     _, _, rank = _tp()
+    conv = sys.modules.get("glm_draft_conv_fused")
+    router = sys.modules.get("glm_router_dedup")
     return {"rank": rank, "argmax": _argmax_stats(), "gumbel": _gumbel_stats(), "armed": ACTIVE, "variant": _runtime, "seq": _state["seq"], "token": _state["token"],
+            "kernel_checks": {"conv": conv.status() if conv is not None else None,
+                              "router": dict(router.S) if router is not None else None},
             "config": CONFIG_HASH, "variants": N, "replays": {k: list(v) for k, v in _state["replays"].items()},
             "sets": {_kind(m): len(m.__dict__.get("_glm_ab_sets") or [None]) for m in _state["managers"]},
             "effective": effective(_specs[_runtime], _base) if ACTIVE else None}

@@ -1,0 +1,105 @@
+{
+  "selected_k": 3,
+  "relative_geometric_throughput": {
+    "2": 0.9154797759947851,
+    "3": 1.0,
+    "4": 0.9630378707515277
+  },
+  "results": {
+    "2": {
+      "stage": "k2",
+      "base": "http://HEAD:8888",
+      "rounds": 3,
+      "concurrency": 1,
+      "quality_passed": 9,
+      "quality_total": 11,
+      "semantic_passed": 11,
+      "summary": {
+        "prose": {
+          "decode_tps": 31.969498348446518,
+          "ttft_s": 0.31214945799996485,
+          "aggregate_tps": 30.654681982129826,
+          "acceptance": 0.5363881401617251
+        },
+        "code": {
+          "decode_tps": 43.75919439770663,
+          "ttft_s": 0.3173114029999624,
+          "aggregate_tps": 41.46602426456586,
+          "acceptance": 0.915129151291513
+        },
+        "json": {
+          "decode_tps": 39.39961527582828,
+          "ttft_s": 0.24629414100002123,
+          "aggregate_tps": 38.10366996677593,
+          "acceptance": 0.7615131578947368
+        }
+      },
+      "median_decode_tps": 39.39961527582828,
+      "foreign_rows": 0,
+      "time": 1790945137.808589
+    },
+    "3": {
+      "stage": "k3-baseline",
+      "base": "http://HEAD:8888",
+      "rounds": 3,
+      "concurrency": 1,
+      "quality_passed": 9,
+      "quality_total": 11,
+      "summary": {
+        "prose": {
+          "decode_tps": 33.86759740958588,
+          "ttft_s": 0.3114829840000084,
+          "aggregate_tps": 32.64941422661812,
+          "acceptance": 0.4357429718875502
+        },
+        "code": {
+          "decode_tps": 50.048099403052596,
+          "ttft_s": 0.3312970639999975,
+          "aggregate_tps": 47.268968163048015,
+          "acceptance": 0.8272727272727273
+        },
+        "json": {
+          "decode_tps": 42.38174933203636,
+          "ttft_s": 0.2652982610000052,
+          "aggregate_tps": 40.7506597531814,
+          "acceptance": 0.6160493827160494
+        }
+      },
+      "median_decode_tps": 42.38174933203636,
+      "foreign_rows": 0,
+      "time": 1790944483.993373
+    },
+    "4": {
+      "stage": "k4",
+      "base": "http://HEAD:8888",
+      "rounds": 3,
+      "concurrency": 1,
+      "quality_passed": 9,
+      "quality_total": 11,
+      "semantic_passed": 11,
+      "summary": {
+        "prose": {
+          "decode_tps": 31.33517430308675,
+          "ttft_s": 0.3218992160000198,
+          "aggregate_tps": 30.239861241013617,
+          "acceptance": 0.37057877813504825
+        },
+        "code": {
+          "decode_tps": 51.20307878369908,
+          "ttft_s": 0.36582365099997105,
+          "aggregate_tps": 48.07558684141135,
+          "acceptance": 0.7698412698412699
+        },
+        "json": {
+          "decode_tps": 39.99012519917868,
+          "ttft_s": 0.24933729999997922,
+          "aggregate_tps": 38.526542718034165,
+          "acceptance": 0.5282258064516129
+        }
+      },
+      "median_decode_tps": 39.99012519917868,
+      "foreign_rows": 0,
+      "time": 1790945545.316293
+    }
+  }
+}
